@@ -61,7 +61,7 @@
       box-shadow: 0 0 8px #ff0066;
     }
 
-    /* Core Glassmorphic Shell */
+    /* Core Glassmorphic Shell - Smoothly scales up when city page activates */
     .nova-container {
       position: relative;
       z-index: 1;
@@ -75,7 +75,12 @@
       padding: 30px;
       text-align: left;
       box-shadow: 0 0 40px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
-      transition: all 0.4s ease;
+      transition: max-width 0.5s cubic-bezier(0.19, 1, 0.22, 1), transform 0.4s ease;
+    }
+
+    /* Expands to an extensive dashboard layout when city data unlocks */
+    .nova-container.full-page-mode {
+      max-width: 900px;
     }
 
     .nova-container h1.main-title {
@@ -111,6 +116,11 @@
       margin-bottom: 20px;
     }
 
+    .lang-row {
+      display: flex;
+      gap: 10px;
+    }
+
     button {
       padding: 12px 20px;
       border: none;
@@ -134,7 +144,7 @@
       color: #00f0ff; 
       border: 1px solid #00f0ff;
     }
-    .english:hover {
+    .english:hover, .english.active {
       background: #00f0ff;
       color: #000;
       box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
@@ -145,7 +155,7 @@
       color: #ff0066; 
       border: 1px solid #ff0066;
     }
-    .hindi:hover {
+    .hindi:hover, .hindi.active {
       background: #ff0066;
       color: #fff;
       box-shadow: 0 0 15px rgba(255, 0, 102, 0.4);
@@ -163,23 +173,61 @@
       margin-bottom: 10px;
     }
 
-    .output-box {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 15px;
-      min-height: 70px;
-      max-height: 200px;
-      overflow-y: auto;
+    /* --- DYNAMIC FULL PAGE METRIC DATA GRID --- */
+    .city-dashboard-view {
+      display: none; /* Invisible initially */
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+      animation: fadeIn 0.5s ease forward;
     }
 
-    #result {
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dashboard-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .dashboard-card h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      color: #00f0ff;
+      margin-bottom: 15px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      padding-bottom: 5px;
+    }
+
+    .dashboard-card ul {
+      list-style: none;
+    }
+
+    .dashboard-card ul li {
       font-size: 0.95rem;
       line-height: 1.5;
-      color: #ffffff;
+      color: #e2e8f0;
+      margin-bottom: 12px;
     }
 
-    /* --- RESPONSIVE BOTTOM DRAWER FOR MOBILE DEVICES --- */
+    .dashboard-card ul li strong {
+      color: #ff0066;
+      display: block;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      margin-top: 20px;
+      max-width: 150px;
+    }
+
+    /* --- MOBILE OVERLAP FIX SHEET --- */
     @media (max-width: 850px) {
       body {
         padding: 0;
@@ -194,22 +242,29 @@
         border-right: none;
         border-bottom: none;
         padding: 20px;
-        max-height: 55vh;
+        max-height: 85vh;
         overflow-y: auto;
+      }
+
+      .nova-container.full-page-mode {
+        max-width: 100vw;
+      }
+
+      .city-dashboard-view {
+        grid-template-columns: 1fr;
+        gap: 15px;
       }
 
       .control-panel {
         flex-direction: row;
       }
 
-      .control-panel button {
+      .lang-row {
         flex: 1;
-        padding: 10px 12px;
-        font-size: 11px;
       }
 
-      .control-panel .speak-btn {
-        flex: 2;
+      .speak-btn {
+        flex: 1;
       }
     }
   </style>
@@ -218,24 +273,51 @@
 
   <canvas id="orbitCanvas"></canvas>
 
-  <div class="nova-container">
+  <div class="nova-container" id="mainContainer">
     <div class="dev-signature">SYSTEM ACCESS // SHIVAM SINGH</div>
 
-    <h1 class="main-title">👋 Hi, I am NOVA</h1>
-    <h2 class="sub-title">Welcome to the living digital museum of India<br><span style="color:#ff0066">Created by Team Nexos</span></h2>
-    <p id="intro">I am your smart assistant for exploring the history, culture, and architecture of all states of India.</p>
+    <div id="landingView">
+      <h1 class="main-title">👋 Hi, I am NOVA</h1>
+      <h2 class="sub-title">Welcome to the living information museum of India<br><span style="color:#ff0066">Created by Shivam Singh</span></h2>
+      <p id="intro">I am your smart assistant for exploring the history and culture of India.</p>
 
-    <div class="control-panel">
-      <button class="english" onclick="setLanguage('en')">English</button>
-      <button class="hindi" onclick="setLanguage('hi')">हिंदी</button>
-      <button class="speak-btn" onclick="startListening()">🎤 Speak State Name</button>
+      <div class="control-panel">
+        <div class="lang-row">
+          <button class="english active" id="btnEn" onclick="setLanguage('en')">English</button>
+          <button class="hindi" id="btnHi" onclick="setLanguage('hi')">हिंदी</button>
+        </div>
+        <button class="speak-btn" onclick="startListening()">🎤 Speak City Target</button>
+      </div>
+
+      <p id="status">System Ready</p>
     </div>
 
-    <p id="status">System Ready</p>
-    
-    <div class="output-box">
-      <p id="result">Awaiting inputs... Say a state name like "Rajasthan", "Kerala", or "Bihar" to unlock knowledge cards.</p>
+    <div id="cityDashboard" style="display: none;">
+      <h1 class="main-title" id="dashCityName">CITY INTEGRATION NODE</h1>
+      <p id="status" style="margin-bottom: 15px;">📊 Live Informational Data Matrix Loaded</p>
+      
+      <div class="city-dashboard-view" style="display: grid;">
+        
+        <div class="dashboard-card">
+          <h3>🏞️ Tourist Attractions</h3>
+          <ul id="listTourism"></ul>
+        </div>
+
+        <div class="dashboard-card">
+          <h3>🏥 Emergency Healthcare</h3>
+          <ul id="listHospitals"></ul>
+        </div>
+
+        <div class="dashboard-card">
+          <h3>⚡ Essential Utilities</h3>
+          <ul id="listNeeds"></ul>
+        </div>
+
+      </div>
+
+      <button class="back-btn" onclick="returnToMenu()">⬅ Back</button>
     </div>
+
   </div>
 
   <script>
@@ -255,19 +337,20 @@
       let cx, cy;
       
       if (window.innerWidth > 850) {
-        cx = (window.innerWidth + 440) / 2;
+        const isFullPage = document.getElementById("mainContainer").classList.contains("full-page-mode");
+        cx = isFullPage ? (window.innerWidth + 850) / 2 : (window.innerWidth + 440) / 2;
         cy = window.innerHeight / 2;
       } else {
         cx = window.innerWidth / 2;
-        cy = window.innerHeight * 0.25; 
+        cy = window.innerHeight * 0.20; 
       }
       
       const time = Date.now() * 0.002;
-      const ringScale = window.innerWidth > 850 ? 50 : 32;
+      const ringScale = window.innerWidth > 850 ? 50 : 28;
 
       for (let i = 1; i <= 5; i++) {
         ctx.beginPath();
-        ctx.strokeStyle = "rgba(0, 240, 255, 0.15)";
+        ctx.strokeStyle = "rgba(0, 240, 255, 0.12)";
         ctx.lineWidth = 1;
         ctx.arc(cx, cy, i * ringScale, 0, Math.PI * 2);
         ctx.stroke();
@@ -285,8 +368,8 @@
         ctx.fill();
       }
 
-      const centerRadius = window.innerWidth > 850 ? 25 : 16; 
-      const moveRadius = window.innerWidth > 850 ? 35 : 15;   
+      const centerRadius = window.innerWidth > 850 ? 25 : 14; 
+      const moveRadius = window.innerWidth > 850 ? 35 : 12;   
       const centerX = cx + Math.cos(time * 1.5) * moveRadius;
       const centerY = cy + Math.sin(time * 1.5) * moveRadius;
       
@@ -304,221 +387,527 @@
 
     // ----------------- NOVA Assistant Data Logic -----------------
     let lang = "en";
+    let hasGreeted = false; 
 
-    // --- COMPLETE COMPREHENSIVE NATIVE REGISTER OF ALL INDIAN STATES ---
-    const stateDatabase = {
+    const cityDatabase = {
       "andhra pradesh": {
-        en: "Andhra Pradesh (Capital: Amaravati): Famous for its long coastline, Tirupati temple, and classical Kuchipudi dance. It is often called the Rice Bowl of India.",
-        hi: "आंध्र प्रदेश (राजधानी: अमरावती): यह राज्य अपने तटीय क्षेत्र, तिरुपति देवस्थानम मंदिर, और कुचिपुड़ी शास्त्रीय नृत्य के लिए विश्वप्रसिद्ध है।"
+        cityName: "ANDHRA PRADESH REGION",
+        en: {
+          tourism: "<li><strong>Tirupati Balaji Temple</strong>World famous hilltop ancient shrine.</li><li><strong>Araku Valley</strong>Scenic coffee plantation hill station.</li>",
+          hospitals: "<li><strong>KIMS Hospitals</strong>Nellore/Secunderabad specialized trauma unit.</li><li><strong>Apollo Hospitals</strong>Visakhapatnam branch.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Vijayawada Central Rail junction & Visakhapatnam Port network.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>तिरुपति बालाजी</strong>विश्व प्रसिद्ध पहाड़ी देवस्थान।</li><li><strong>अराकू घाटी</strong>सुंदर पहाड़ी एवं कॉफी बागान क्षेत्र।</li>",
+          hospitals: "<li><strong>किम्स अस्पताल</strong>आधुनिक सुपर स्पेशियलिटी केयर।</li><li><strong>अपोलो अस्पताल</strong>विशाखापत्तनम मुख्य विंग।</li>",
+          needs: "<li><strong>यातायात</strong>विजयवाड़ा मुख्य रेलवे जंक्शन एवं विशाखापत्तनम एयरपोर्ट।</li>"
+        }
       },
       "arunachal pradesh": {
-        en: "Arunachal Pradesh (Capital: Itanagar): Known as the Land of the Rising Sun, it features pristine Himalayan landscapes, Tawang Monastery, and rich tribal heritage.",
-        hi: "अरुणाचल प्रदेश (राजधानी: ईटानगर): 'उगते सूरज की भूमि' के नाम से जाना जाने वाला यह राज्य तवांग मठ और समृद्ध जनजातीय संस्कृति के लिए प्रसिद्ध है।"
+        cityName: "ARUNACHAL PRADESH REGION",
+        en: {
+          tourism: "<li><strong>Tawang Monastery</strong>Indias largest historic Buddhist monastery.</li><li><strong>Ziro Valley</strong>Famous alpine valley hosting music festivals.</li>",
+          hospitals: "<li><strong>TRIHMS</strong>Tomo Riba Institute of Health & Medical Sciences, Naharlagun.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Itanagar Hollongi Airport & Naharlagun railway terminal.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>तवांग मठ</strong>भारत का सबसे बड़ा ऐतिहासिक बौद्ध मठ।</li><li><strong>जीरो वैली</strong>संगीत उत्सवों के लिए प्रसिद्ध पर्वतीय घाटी।</li>",
+          hospitals: "<li><strong>TRIHMS अस्पताल</strong>नहरलागुन प्रमुख सरकारी चिकित्सा केंद्र।</li>",
+          needs: "<li><strong>यातायात</strong>ईटानगर होलोंगी हवाई अड्डा और नाहरलागुन स्टेशन।</li>"
+        }
       },
       "assam": {
-        en: "Assam (Capital: Dispur): Worldwide famous for its robust Assam tea, exquisite Muga silk, and the Kaziranga National Park which protects the rare one-horned rhinoceros.",
-        hi: "असम (राजधानी: दिसपुर): असम अपनी शानदार चाय, मूंगा रेशम और काजीरंगा राष्ट्रीय उद्यान (एक सींग वाले गेंडे का घर) के लिए प्रसिद्ध है।"
+        cityName: "ASSAM REGION",
+        en: {
+          tourism: "<li><strong>Kaziranga National Park</strong>The global home of the rare one-horned rhinoceros.</li><li><strong>Kamakhya Temple</strong>Ancient powerful hilltop Shakti Peeth temple in Guwahati.</li>",
+          hospitals: "<li><strong>GMCH</strong>Guwahati Medical College & Hospital. Main regional trauma setup.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Guwahati Train Junction & Lokpriya Gopinath Bordoloi Airport.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>काजीरंगा राष्ट्रीय उद्यान</strong>एक सींग वाले दुर्लभ गेंडों का मुख्य प्राकृतिक घर।</li><li><strong>कामाख्या मंदिर</strong>गुवाहाटी में स्थित प्रसिद्ध प्राचीन शक्तिपीठ।</li>",
+          hospitals: "<li><strong>GMCH गुवाहाटी</strong>पूर्वोत्तर का प्रमुख सरकारी चिकित्सालय।</li>",
+          needs: "<li><strong>यातायात</strong>गुवाहाटी रेलवे जंक्शन एवं लोकप्रिय गोपीनाथ बोरदोलोई हवाई अड्डा।</li>"
+        }
       },
       "bihar": {
-        en: "Bihar (Capital: Patna): The seat of ancient learning. Famous for Bodh Gaya where Buddha gained enlightenment, Nalanda University ruins, and its beautiful ancient Madhubani art paintings.",
-        hi: "बिहार (राजधानी: पटना): प्राचीन ज्ञान की भूमि। यह भगवान बुद्ध की ज्ञानस्थली बोधगया, नालंदा विश्वविद्यालय के अवशेष और मधुबनी पेंटिंग्स के लिए प्रसिद्ध है।"
+        cityName: "BIHAR REGION",
+        en: {
+          tourism: "<li><strong>Mahabodhi Temple (Bodh Gaya)</strong>UNESCO site where Lord Buddha gained supreme enlightenment.</li><li><strong>Nalanda University Ruins</strong>The ancient dynamic seat of international learning.</li><li><strong>Golghar (Patna)</strong>Historic massive granary dome.</li>",
+          hospitals: "<li><strong>PMCH / AIIMS Patna</strong>Main regional emergency healthcare command centers.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Patna Junction Terminal, Patliputra Terminal, & Patna Airport (PAT).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>महाबोधि मंदिर (बोधगया)</strong>यूनेस्को स्थल जहां भगवान बुद्ध को ज्ञान प्राप्त हुआ।</li><li><strong>नालंदा विश्वविद्यालय अवशेष</strong>प्राचीन काल का प्रसिद्ध वैश्विक ज्ञान केंद्र।</li><li><strong>गोलघर (पटना)</strong>ऐतिहासिक विशाल गुंबद अन्न भंडार।</li>",
+          hospitals: "<li><strong>PMCH / एम्स पटना</strong>राज्य के मुख्य आपातकालीन चिकित्सा केंद्र।</li>",
+          needs: "<li><strong>यातायात</strong>पटना जंक्शन मुख्य रेलवे स्टेशन एवं जयप्रकाश नारायण हवाई अड्डा।</li>"
+        }
       },
       "chhattisgarh": {
-        en: "Chhattisgarh (Capital: Raipur): Celebrated for its heavy forest covers, ancient waterfalls like Chitrakote, and historic tribal craftworks in Dokra style.",
-        hi: "छत्तीसगढ़ (राजधानी: रायपुर): अपने घने जंगलों, चित्रकोट जैसे विशाल झरनों और डोकरा कला जैसी ऐतिहासिक जनजातीय शिल्पकला के लिए प्रसिद्ध है।"
+        cityName: "CHHATTISGARH REGION",
+        en: {
+          tourism: "<li><strong>Chitrakote Falls</strong>Widest waterfall in India, often called the Niagara of India.</li><li><strong>Bhoramdeo Temple</strong>Ancient stone temple known as the Khajuraho of Chhattisgarh.</li>",
+          hospitals: "<li><strong>AIIMS Raipur</strong>Advanced national level multi-specialty super care facility.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Raipur Central Railway Depot & Swami Vivekananda Airport.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>चित्रकोट जलप्रपात</strong>भारत का सबसे चौड़ा झरना, इसे भारत का नियाग्रा भी कहते हैं।</li><li><strong>भोरमदेव मंदिर</strong>प्राचीन नक्काशीदार पत्थर का ऐतिहासिक मंदिर।</li>",
+          hospitals: "<li><strong>एम्स रायपुर</strong>उन्नत राष्ट्रीय स्तर का सुपर स्पेशियलिटी अस्पताल।</li>",
+          needs: "<li><strong>यातायात</strong>रायपुर मुख्य जंक्शन रेलवे स्टेशन एवं स्वामी विवेकानंद हवाई अड्डा।</li>"
+        }
       },
       "goa": {
-        en: "Goa (Capital: Panaji): Indias smallest state, famous across the globe for its golden sand beaches, historic Portuguese church architecture, and active seafood nightlife.",
-        hi: "गोवा (राजधानी: पणजी): भारत का सबसे छोटा राज्य, जो अपने सुनहरे समुद्र तटों, पुर्तगाली वास्तुकला के चर्चों और समुद्री व्यंजनों के लिए प्रसिद्ध है।"
+        cityName: "GOA REGION",
+        en: {
+          tourism: "<li><strong>Calangute & Baga Beaches</strong>Golden sandy coastlines with thriving night culture.</li><li><strong>Basilica of Bom Jesus</strong>UNESCO world heritage site holding mortal remains of St. Francis Xavier.</li>",
+          hospitals: "<li><strong>Goa Medical College (GMC)</strong>Bambolim. Indias oldest modern premier medical institution.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Madgaon Railway Terminal & Manohar International Airport (Mopa).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>कलंगूट और बागा बीच</strong>सैलानियों के लिए प्रसिद्ध सुनहरे समुद्र तट।</li><li><strong>बेसिलिका ऑफ बॉम जीसस</strong>यूनेस्को ऐतिहासिक चर्च वास्तुकला धरोहर।</li>",
+          hospitals: "<li><strong>गोवा मेडिकल कॉलेज</strong>बाम्बोलिम में स्थित प्रमुख सरकारी अस्पताल विंग।</li>",
+          needs: "<li><strong>यातायात</strong>मडगांव रेलवे जंक्शन और मोपा अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
       },
       "gujarat": {
-        en: "Gujarat (Capital: Gandhinagar): Known for its rich mercantile history, the Asiatic Lions of Gir, Mahatma Gandhis legacy, and colorful Garba dance festivals.",
-        hi: "गुजरात (राजधानी: गांधीनगर): अपने व्यापारिक इतिहास, गीर के एशियाई शेरों, महात्मा गांधी की विरासत और रंगीन गरबा नृत्य उत्सवों के लिए जाना जाता है।"
+        cityName: "GUJARAT REGION",
+        en: {
+          tourism: "<li><strong>Statue of Unity</strong>The tallest statue in the world dedicated to Sardar Patel.</li><li><strong>Gir National Park</strong>The exclusive natural sanctuary for wild Asiatic Lions.</li>",
+          hospitals: "<li><strong>Civil Hospital Ahmedabad</strong>One of the largest medical center networks in Asia.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Ahmedabad Junction Terminal & Sardar Vallabhbhai Patel Airport.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>स्टैच्यू ऑफ यूनिटी</strong>सरدار पटेल को समर्पित दुनिया की सबसे ऊंची प्रतिमा।</li><li><strong>गीर राष्ट्रीय उद्यान</strong>एशियाई शेरों का एकमात्र सुरक्षित प्राकृतिक अभयारण्य।</li>",
+          hospitals: "<li><strong>सिविल अस्पताल अहमदाबाद</strong>एशिया के सबसे बड़े चिकित्सा नेटवर्क में से एक।</li>",
+          needs: "<li><strong>यातायात</strong>अहमदाबाद रेलवे जंक्शन एवं सरदार वल्लभभाई पटेल हवाई अड्डा।</li>"
+        }
       },
       "haryana": {
-        en: "Haryana (Capital: Chandigarh): Steeped in Vedic history as the battleground of Mahabharata at Kurukshetra. Today, it is a powerhouse of sports and agricultural production.",
-        hi: "हरियाणा (राजधानी: चंडीगढ़): कुरुक्षेत्र में महाभारत की ऐतिहासिक युद्धभूमि। वर्तमान में यह कृषि उत्पादन और खेलों में पदक जीतने के लिए अग्रणी है।"
+        cityName: "HARYANA REGION",
+        en: {
+          tourism: "<li><strong>Kingdom of Dreams (Gurugram)</strong>Modern corporate live entertainment theater hub.</li><li><strong>Kurukshetra Battlefield</strong>Ancient epic setting of the Mahabharata and Bhagavad Gita text.</li>",
+          hospitals: "<li><strong>Medanta The Medicity</strong>Gurugram. Ultra-modern private multi-specialty corporate medical giant.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Ambala Cantt Railway Junction & Gurugram Rapid Metro networks.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>किंगडम ऑफ ड्रीम्स</strong>गुरुग्राम का आधुनिक लाइव मनोरंजन और थिएटर पार्क।</li><li><strong>कुरुक्षेत्र युद्धभूमि</strong>महाभारत और श्रीमद्भगवद्गीता का प्राचीन ऐतिहासिक स्थल।</li>",
+          hospitals: "<li><strong>मेदांता द मेडिसिटी</strong>गुरुग्राम का विश्वप्रसिद्ध प्राइवेट सुपर स्पेशियलिटी अस्पताल।</li>",
+          needs: "<li><strong>यातायात</strong>अंबाला कैंट रेलवे जंक्शन एवं गुरुग्राम रैपिड मेट्रो प्रणाली।</li>"
+        }
       },
       "himachal pradesh": {
-        en: "Himachal Pradesh (Capital: Shimla): Nestled in the Western Himalayas, it is famous for beautiful hill stations like Manali, apple orchards, and scenic mountain passes.",
-        hi: "हिमाचल प्रदेश (राजधानी: शिमला): पश्चिमी हिमालय में बसा यह राज्य मनाली जैसे खूबसूरत हिल स्टेशनों, सेब के बागानों और प्राचीन देवभूमि संस्कृति के लिए प्रसिद्ध है।"
+        cityName: "HIMACHAL PRADESH REGION",
+        en: {
+          tourism: "<li><strong>Manali & Shimla</strong>Stunning snow-capped valleys and historic toy train ridge walks.</li><li><strong>Dharamshala</strong>Scenic residence of the Dalai Lama and Tibetan spiritual center.</li>",
+          hospitals: "<li><strong>IGMC Shimla</strong>Indira Gandhi Medical College. Main multi-ward hill terminal facility.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Kalka-Shimla Toy Train line & Bhuntar Airbase (Kullu).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>मनाली और शिमला</strong>बर्फ से ढकी खूबसूरत वादियां और मॉल रोड ट्रैक।</li><li><strong>धर्मशाला</strong>दलाई लामा का निवास स्थान एवं तिब्बती संस्कृति का मुख्य केंद्र।</li>",
+          hospitals: "<li><strong>IGMC शिमला</strong>इंदिरा गांधी मेडिकल कॉलेज, पहाड़ों का मुख्य चिकित्सा केंद्र।</li>",
+          needs: "<li><strong>यातायात</strong>कालका-शिमला टॉय ट्रेन लाइन एवं भुंतर हवाई अड्डा (कुल्लू)।</li>"
+        }
       },
       "jharkhand": {
-        en: "Jharkhand (Capital: Ranchi): The Mineral Land of India. Famous for its thick woods, rich coal fields, and sacred tribal worship grounds like Baidyanath Dham.",
-        hi: "झारखंड (राजधानी: रांची): भारत का खनिज प्रदेश। यह अपने घने वनों, कोयला खदानों और बैद्यनाथ धाम जैसे पवित्र धार्मिक स्थलों के लिए जाना जाता है।"
+        cityName: "JHARKHAND REGION",
+        en: {
+          tourism: "<li><strong>Baidyanath Dham (Deoghar)</strong>Sacred ancient Jyotirlinga temple destination.</li><li><strong>Hundru Falls</strong>Magnificent natural plunge waterfall located in Ranchi network.</li>",
+          hospitals: "<li><strong>RIMS Ranchi</strong>Rajendra Institute of Medical Sciences (Dominant state critical care).</li>",
+          needs: "<li><strong>Transit Hubs</strong>Ranchi Junction Terminal & Birsa Munda Airport.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>बैद्यनाथ धाम (देवघर)</strong>पवित्र प्राचीन शिव ज्योतिर्लिंग मंदिर स्थल।</li><li><strong>हुंडरू जलप्रपात</strong>रांची के पास स्थित एक अत्यंत सुंदर प्राकृतिक झरना।</li>",
+          hospitals: "<li><strong>RIMS रांची</strong>राजेंद्र आयुर्विज्ञान संस्थान (राज्य का प्रमुख चिकित्सा अस्पताल)।</li>",
+          needs: "<li><strong>यातायात</strong>रांची रेलवे जंक्शन एवं बिरसा मुंडा हवाई अड्डा।</li>"
+        }
       },
       "karnataka": {
-        en: "Karnataka (Capital: Bengaluru): Indias IT Hub. It hosts beautiful historic ruins of the Vijayanagara Empire at Hampi, Mysore Palace, and fragrant sandalwood forests.",
-        hi: "कर्नाटक (राजधानी: बेंगलुरु): भारत का आईटी हब। यह हम्पी में विजयनगर साम्राज्य के अवशेषों, भव्य मैसूर पैलेस और चंदन के वनों के लिए प्रसिद्ध है।"
+        cityName: "KARNATAKA REGION",
+        en: {
+          tourism: "<li><strong>Hampi Ruins</strong>Stunning boulder-strewn remains of the rich Vijayanagara Empire.</li><li><strong>Mysore Palace</strong>The grand royal heritage palace illuminated with thousands of lights.</li>",
+          hospitals: "<li><strong>NIMHANS Bengaluru</strong>The leading national institute for mental health & neurosciences.</li>",
+          needs: "<li><strong>Transit Hubs</strong>KSR Bengaluru City Depot & Kempegowda International Airport (BLR).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>हम्पी अवशेष</strong>विजयनगर साम्राज्य के वैभवशाली पत्थरों से निर्मित प्राचीन स्मारक।</li><li><strong>मैसूर पैलेस</strong>मैसूर राजवंश का भव्य, वास्तुकला से परिपूर्ण शाही महल।</li>",
+          hospitals: "<li><strong>निमहंस (NIMHANS)</strong>बेंगलुरु का राष्ट्रीय मानसिक स्वास्थ्य एवं तंत्रिका विज्ञान संस्थान।</li>",
+          needs: "<li><strong>यातायात</strong>केएसआर बेंगलुरु सिटी स्टेशन एवं केम्पेगौड़ा अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
       },
       "kerala": {
-        en: "Kerala (Capital: Thiruvananthapuram): Known as Gods Own Country. Celebrated for its tranquil palm-lined backwaters, Ayurvedic medical treatments, and Kathakali dance art.",
-        hi: "केरल (राजधानी: तिरुवनंतपुरम): 'ईश्वर का अपना घर'। यह अपने शांत बैकवाटर झीलों, पारंपरिक आयुर्वेद उपचार और कथकली नृत्य कला के लिए प्रसिद्ध है।"
+        cityName: "KERALA REGION",
+        en: {
+          tourism: "<li><strong>Alleppey Backwaters</strong>Tranquil palm-lined canal boat cruises on houseboats.</li><li><strong>Munnar Hills</strong>Expansive high-altitude misty green tea plantation ridges.</li>",
+          hospitals: "<li><strong>Sree Chitra Tirunal Institute</strong>Trivandrum (Advanced neurological center).</li>",
+          needs: "<li><strong>Transit Hubs</strong>Ernakulam Junction Rail Terminal & Cochin International Airport (COK).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>एलेप्पी बैकवाटर्स</strong>हाउस बोट क्रूज और शांत पानी की सुंदर झीलें।</li><li><strong>मुन्नार हिल्स</strong>हरे-भरे चाय के बागानों से ढकी खूबसूरत धुंधली पहाड़ियां।</li>",
+          hospitals: "<li><strong>श्री चित्रा तिरुनल संस्थान</strong>तिरुवनंतपुरम का नामी मेडिकल रिसर्च केंद्र।</li>",
+          needs: "<li><strong>यातायात</strong>एर्नाकुलम जंक्शन रेलवे स्टेशन एवं कोचीन अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
       },
       "madhya pradesh": {
-        en: "Madhya Pradesh (Capital: Bhopal): The Heart of India. Famous for the Khajuraho temples, Sanchi Stupa, and dense tiger reserves like Kanha and Bandhavgarh.",
-        hi: "मध्य प्रदेश (राजधानी: भोपाल): भारत का दिल। यह खजुराहो के मंदिरों, सांची स्तूप और कान्हा-बांधवगढ़ जैसे विशाल बाघ अभयारण्यों के लिए प्रसिद्ध है।"
+        cityName: "MADHYA PRADESH REGION",
+        en: {
+          tourism: "<li><strong>Khajuraho Temples</strong>UNESCO stone temples displaying complex intricate sensuous carvings.</li><li><strong>Sanchi Stupa</strong>Ancient hemispherical stone structure built over relics of Buddha.</li>",
+          hospitals: "<li><strong>AIIMS Bhopal</strong>Advanced medical hub running super-specialty operations.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Itarsi Junction, Bhopal Junction, & Raja Bhoj Airport.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>खजुराहो के मंदिर</strong>यूनेस्को सूची में शामिल अद्भुत शिल्प कला और नक्काशीदार मंदिर।</li><li><strong>सांची का स्तूप</strong>सम्राट अशोक द्वारा निर्मित प्राचीन बौद्ध स्तूप स्मारक।</li>",
+          hospitals: "<li><strong>एम्स भोपाल</strong>उन्नत स्वास्थ्य सेवाओं और ऑपरेशनों के लिए मुख्य अस्पताल।</li>",
+          needs: "<li><strong>यातायात</strong>इटारसी मुख्य जंक्शन, भोपाल जंक्शन एवं राजा भोज हवाई अड्डा।</li>"
+        }
       },
       "maharashtra": {
-        en: "Maharashtra (Capital: Mumbai): Indias financial capital. Features historic rock-cut caves at Ajanta and Ellora, Shivaji Maharajs hill forts, and lively Ganesh Chaturthi festivals.",
-        hi: "महाराष्ट्र (राजधानी: मुंबई): भारत की वित्तीय राजधानी। अजंता-एलोरा की गुफाएं, छत्रपति शिवाजी महाराज के किले और भव्य गणेशोत्सव इसकी पहचान हैं।"
+        cityName: "MAHARASHTRA REGION",
+        en: {
+          tourism: "<li><strong>Ajanta & Ellora Caves</strong>World heritage rock-cut monastic caves and monolithic temples.</li><li><strong>Gateway of India</strong>Iconic structural arch monument located on Mumbai harbor.</li>",
+          hospitals: "<li><strong>KEM Hospital / Tata Memorial</strong>Mumbai. Globally acclaimed public treatment & cancer setups.</li>",
+          needs: "<li><strong>Transit Hubs</strong>CSMT Rail Terminal & Chhatrapati Shivaji Maharaj Airport (BOM).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>अजंता और एलोरा गुफाएं</strong>चट्टानों को काटकर बनाई गई प्राचीन गुफाएं और कैलाश मंदिर।</li><li><strong>गेटवे ऑफ इंडिया</strong>मुंबई के समुद्र तट पर स्थित ऐतिहासिक विशाल मेहराब द्वार।</li>",
+          hospitals: "<li><strong>KEM अस्पताल / टाटा मेमोरियल</strong>मुंबई के विख्यात सार्वजनिक स्वास्थ्य और कैंसर केयर केंद्र।</li>",
+          needs: "<li><strong>यातायात</strong>छत्रपति शिवाजी महाराज टर्मिनस (CSMT) एवं मुंबई हवाई अड्डा।</li>"
+        }
       },
       "manipur": {
-        en: "Manipur (Capital: Imphal): Famed for Loktak, the unique floating lake with phumdis, the graceful Manipuri classical dance, and its indigenous polo history.",
-        hi: "मणिपुर (राजधानी: इम्फाल): तैरती हुई लोकतक झील (फुमदी के लिए प्रसिद्ध), कलात्मक मणिपुरी शास्त्रीय नृत्य और पोलो खेल की जन्मभूमि के रूप में जाना जाता है।"
+        cityName: "MANIPUR REGION",
+        en: {
+          tourism: "<li><strong>Loktak Floating Lake</strong>The exclusive floating ring lake featuring organic swamp phumdis.</li><li><strong>Kangla Fort</strong>Historic palace compound situated on the banks of Imphal river.</li>",
+          hospitals: "<li><strong>RIMS Imphal</strong>Regional Institute of Medical Sciences (Prime health hub).</li>",
+          needs: "<li><strong>Transit Hubs</strong>Imphal International Airport Terminal & Jiribam Rail Link.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>लोकताक झील</strong>जैविक तैरते हुए 'फुमदी' द्वीपों के लिए प्रसिद्ध अनोखी झील।</li><li><strong>कांगला फोर्ट</strong>इम्फाल नदी के तट पर स्थित मणिपुर राजवंश का ऐतिहासिक किला।</li>",
+          hospitals: "<li><strong>RIMS इम्फाल</strong>क्षेत्रीय आयुर्विज्ञान संस्थान (पूर्वोत्तर का प्रमुख अस्पताल)।</li>",
+          needs: "<li><strong>यातायात</strong>इम्फाल अंतर्राष्ट्रीय हवाई अड्डा एवं जिरीबाम रेल नेटवर्क।</li>"
+        }
       },
       "meghalaya": {
-        en: "Meghalaya (Capital: Shillong): The Abode of Clouds. Home to Mawsynram, the wettest place on earth, and unique living root bridges crafted by the Khasi tribe.",
-        hi: "मेघालय (राजधानी: शिलांग): 'बादलों का घर'। दुनिया में सबसे अधिक वर्षा वाला स्थान मॉसिनराम और जीवित जड़ों से बने प्राकृतिक पुल (लिविंग रूट ब्रिज) यहीं स्थित हैं।"
+        cityName: "MEGHALAYA REGION",
+        en: {
+          tourism: "<li><strong>Living Root Bridges</strong>Bridges shaped naturally from tree roots by Khasi tribes.</li><li><strong>Cherrapunji & Mawsynram</strong>Spectacular emerald valleys with the heaviest rain loops on Earth.</li>",
+          hospitals: "<li><strong>NEIGRIHMS</strong>Shillong. Northeast Indira Gandhi Regional Health Institute.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Guwahati Rail head link & Shillong Umroi Air Terminal.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>लिविंग रूट ब्रिज</strong>खासी जनजातियों द्वारा पेड़ की जड़ों से बनाए गए प्राकृतिक पुल।</li><li><strong>चेरापूंजी और मॉसिनराम</strong>दुनिया में सबसे ज्यादा बारिश वाले घने हरे-भरे पहाड़ी क्षेत्र।</li>",
+          hospitals: "<li><strong>NEIGRIHMS शिलांग</strong>उत्तर-पूर्व का विशाल केंद्र सरकार का सुपर स्पेशियलिटी अस्पताल।</li>",
+          needs: "<li><strong>यातायात</strong>गुवाहाटी रेलवे स्टेशन मार्ग link एवं शिलांग उमरोई हवाई अड्डा।</li>"
+        }
       },
       "mizoram": {
-        en: "Mizoram (Capital: Aizawl): Famous for its rolling blue hills, extensive green bamboo forests, and the rhythmic traditional Cheraw (bamboo) folk dance.",
-        hi: "मिजोरम (राजधानी: आइजोल): अपनी सुंदर नीली पहाड़ियों, बांस के घने जंगलों और प्रसिद्ध पारंपरिक 'चेराव' (बांस नृत्य) के लिए लोकप्रिय है।"
+        cityName: "MIZORAM REGION",
+        en: {
+          tourism: "<li><strong>Vantawng Falls</strong>The highest spectacular green cascade waterfall in Mizoram setup.</li><li><strong>Phawngpui Blue Mountain</strong>The peak crest featuring evergreen pine woods and rare birds.</li>",
+          hospitals: "<li><strong>ZMC Falkawn</strong>Zoram Medical College. Central state diagnostic treatment center.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Lengpui Airport Terminal (Aizawl) & Bairabi Railway branch.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>वनतावन प्रपात</strong>मिजोरम का सबसे ऊंचा और सुंदर हरा-भरा प्राकृतिक जलप्रपात।</li><li><strong>फौंगपुई ब्लू माउंटेन</strong>सदाबहार जंगलों और दुर्लभ पक्षियों से युक्त राज्य की सबसे ऊंची चोटी।</li>",
+          hospitals: "<li><strong>ZMC फालकावन</strong>ज़ोरम मेडिकल कॉलेज (राज्य का केंद्रीय मुख्य अस्पताल)।</li>",
+          needs: "<li><strong>यातायात</strong>लेंगपुई हवाई अड्डा (आइजोल) एवं बैराबी रेलवे शाखा नेटवर्क।</li>"
+        }
       },
       "nagaland": {
-        en: "Nagaland (Capital: Kohima): Home to vibrant warrior tribes, scenic Dzukou Valley, and the colorful annual Hornbill Festival celebrating indigenous Naga culture.",
-        hi: "नागालैंड (राजधानी: कोहिमा): समृद्ध जनजातीय योद्धा संस्कृतियों, खूबसूरत जुकू घाटी और प्रत्येक वर्ष होने वाले प्रसिद्ध 'हॉर्नबिल महोत्सव' के लिए प्रसिद्ध है।"
+        cityName: "NAGALAND REGION",
+        en: {
+          tourism: "<li><strong>Kisama Heritage Village</strong>The epic center hosting the dynamic annual Hornbill Festival loops.</li><li><strong>Dzukou Valley</strong>Breathtaking green lilies valley spanning state borders.</li>",
+          hospitals: "<li><strong>Naga Hospital Authority</strong>Kohima. Central multi-disciplinary public infrastructure.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Dimapur Train Junction & Dimapur domestic airport line.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>किसामा हेरिटेज विलेज</strong>हर साल होने वाले भव्य नागा 'हॉर्नबिल महोत्सव' का मुख्य स्थल।</li><li><strong>जुकू घाटी</strong>नागालैंड और मणिपुर सीमा पर फैली फूलों की मनमोहक हरी-भरी घाटी।</li>",
+          hospitals: "<li><strong>नागा अस्पताल प्राधिकरण</strong>कोहिमा में स्थित मुख्य सरकारी चिकित्सा उपचार केंद्र।</li>",
+          needs: "<li><strong>यातायात</strong>दीमापुर मुख्य रेलवे जंक्शन एवं दीमापुर घरेलू हवाई अड्डा।</li>"
+        }
       },
       "odisha": {
-        en: "Odisha (Capital: Bhubaneswar): Famous for the ancient Konark Sun Temple, Puri Jagannath Rath Yatra, Chilika Lake, and the elegant Odissi classical dance form.",
-        hi: "ओडिशा (राजधानी: भुवनेश्वर): कोणार्क के सूर्य मंदिर, पुरी की जगन्नाथ रथ यात्रा, चिल्का झील और शास्त्रीय ओडिसी नृत्य शैली के लिए विश्वभर में प्रसिद्ध है।"
+        cityName: "ODISHA REGION",
+        en: {
+          tourism: "<li><strong>Konark Sun Temple</strong>UNESCO architectural chariot temple marvel cut from dark stone blocks.</li><li><strong>Jagannath Temple (Puri)</strong>Ancient oceanfront temple famous for the grand annual Rath Yatra.</li><li><strong>Chilika Lake</strong>Asias largest brackish water coastal lagoon protecting migratory birds.</li>",
+          hospitals: "<li><strong>AIIMS Bhubaneswar</strong>Premier national public emergency medical installation.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Bhubaneswar Railway Terminal & Biju Patnaik Airport.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>कोणार्क सूर्य मंदिर</strong>यूनेस्को रथ-आकार वास्तुकला चमत्कार।</li><li><strong>जगन्नाथ मंदिर (पुरी)</strong>भव्य वार्षिक रथ यात्रा के लिए प्रसिद्ध प्रसिद्ध तटीय धाम।</li><li><strong>चिल्का झील</strong>प्रवासी पक्षियों और डॉल्फ़िन का घर, एशिया की सबसे बड़ी खारे पानी की झील।</li>",
+          hospitals: "<li><strong>एम्स भुवनेश्वर</strong>राष्ट्रीय स्तर का प्रमुख सार्वजनिक सुपर स्पेशियलिटी अस्पताल।</li>",
+          needs: "<li><strong>यातायात</strong>भुवनेश्वर मुख्य रेलवे टर्मिनस एवं बीजू पटनायक हवाई अड्डा।</li>"
+        }
       },
       "punjab": {
-        en: "Punjab (Capital: Chandigarh): The Land of Five Rivers. World-renowned for the sacred Golden Temple in Amritsar, energetic Bhangra dance, and rich, vibrant cuisine.",
-        hi: "पंजाब (राजधानी: चंडीगढ़): पांच नदियों की भूमि। अमृतसर का पवित्र स्वर्ण मंदिर, ऊर्जावान भांगड़ा नृत्य और समृद्ध खान-पान इसकी मुख्य विशेषताएं हैं।"
+        cityName: "PUNJAB REGION",
+        en: {
+          tourism: "<li><strong>The Golden Temple</strong>Harmandir Sahib in Amritsar. The holiest gold-gilded Sikh shrine setup.</li><li><strong>Jallianwala Bagh</strong>Historic memorial garden keeping footprints of freedom struggles.</li>",
+          hospitals: "<li><strong>PGIMER Satellite Center</strong>/ Fortis Hospital Hospital Network in Mohali zone.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Amritsar Junction Terminal & Sri Guru Ram Das Jee International Airport.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>स्वर्ण मंदिर (हरमंदिर साहिब)</strong>अमृतसर का पवित्रतम स्वर्ण-जड़ित सिख धार्मिक स्थल।</li><li><strong>जलियावाला बाग</strong>राष्ट्रीय ऐतिहासिक स्मारक एवं अमर ज्योति उद्यान पार्क।</li>",
+          hospitals: "<li><strong>पीजीआईएमईआर सैटेलाइट / फोर्टिस</strong>मोहाली क्षेत्र का आधुनिक चिकित्सा नेटवर्क।</li>",
+          needs: "<li><strong>यातायात</strong>अमृतसर जंक्शन टर्मिनस एवं श्री गुरु रामदास जी अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
       },
       "rajasthan": {
-        en: "Rajasthan (Capital: Jaipur): The Land of Kings. Famed for sprawling golden deserts, massive hilltop forts like Amer and Mehrangarh, folk music, and grand royal palaces.",
-        hi: "राजस्थान (राजधानी: जयपुर): राजाओं की भूमि। अपने सुनहरे रेगिस्तान, आमेर और मेहरानगढ़ जैसे विशाल किलों, घूमर नृत्य और शाही महलों के लिए प्रसिद्ध है।"
+        cityName: "RAJASTHAN REGION",
+        en: {
+          tourism: "<li><strong>Jaipur Pink City forts</strong>Amer Fort, Hawa Mahal palace, and ancient astronomical Jantar Mantar.</li><li><strong>Udaipur Lake Palace</strong>Grand white stone structures floating over Lake Pichola waters.</li>",
+          hospitals: "<li><strong>SMS Medical College</strong>Sawai Man Singh Hospital, Jaipur. Mass emergency operations.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Jaipur Central Depot & Jaipur International Airport (JAI).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>जयपुर के किले और महल</strong>आमेर किला, हवा महल और जंतर मंतर खगोलीय वेधशाला।</li><li><strong>उदयपुर लेक पैलेस</strong>पिचोला झील के पानी पर तैरता हुआ भव्य संगमरमर का शाही महल।</li>",
+          hospitals: "<li><strong>SMS मेडिकल कॉलेज</strong>सवाई मानसिंह अस्पताल जयपुर (राज्य का मुख्य चिकित्सालय)।</li>",
+          needs: "<li><strong>यातायात</strong>जयपुर मुख्य रेलवे स्टेशन एवं जयपुर अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
       },
       "sikkim": {
-        en: "Sikkim (Capital: Gangtok): Located beneath Mount Kangchenjunga. It is Indias first fully organic state, famous for Buddhist monasteries, alpine valleys, and clean green eco-tourism.",
-        hi: "सिक्किम (राजधानी: गंगटोक): कंचनजंगा पर्वत की छांव में बसा देश का पहला पूर्ण जैविक (ऑर्गेनिक) राज्य है, जो बौद्ध मठों और शांत वातावरण के लिए प्रसिद्ध है।"
+        cityName: "SIKKIM REGION",
+        en: {
+          tourism: "<li><strong>Nathula Mountain Pass</strong>High alpine trade border gateway facing Himalayan snow walls.</li><li><strong>Gurudongmar Lake</strong>Sacred clear glacial lake located at extreme high altitudes.</li>",
+          hospitals: "<li><strong>STNM Hospital</strong>Sochaygang. Central public super specialty medical network block.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Pakyong Airport Terminal & Siliguri junction surface links.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>नाथुला दर्रा</strong>हिमालय की बर्फानी चोटियों के बीच स्थित भारत-चीन ऐतिहासिक व्यापार सीमा मार्ग।</li><li><strong>गुरुडोंगमार झील</strong>अत्यधिक ऊंचाई पर स्थित पवित्र और साफ पानी की ग्लेशियर झील।</li>",
+          hospitals: "<li><strong>STNM अस्पताल गंगटोक</strong>सिक्किम राज्य का सबसे आधुनिक और बड़ा चिकित्सालय परिसर।</li>",
+          needs: "<li><strong>यातायात</strong>पाकयोंग हवाई अड्डा टर्मिनस एवं सिलीगुड़ी रेलवे स्टेशन संपर्क मार्ग।</li>"
+        }
       },
       "tamil nadu": {
-        en: "Tamil Nadu (Capital: Chennai): Home to ancient Dravidian stone temples with massive Gopurams (like Thanjavur), classical Bharatanatyam dance, and deep Tamil literary history.",
-        hi: "तमिलनाडु (राजधानी: चेन्नई): विशाल गोपुरम वाले प्राचीन द्रविड़ वास्तुकला के मंदिरों (जैसे तंजावुर), भरतनाट्यम नृत्य और समृद्ध तमिल संस्कृति का केंद्र है।"
+        cityName: "TAMIL NADU REGION",
+        en: {
+          tourism: "<li><strong>Brihadisvara Temple (Thanjavur)</strong>Massive ancient Dravidian granite structural stone temple.</li><li><strong>Ooty Hill Station</strong>Misty botanical gardens and high altitude Nilgiri toy train track loops.</li>",
+          hospitals: "<li><strong>MMC Chennai</strong>Madras Medical College & General Hospital (Mass public emergency setup).</li>",
+          needs: "<li><strong>Transit Hubs</strong>Chennai Central Depot & Chennai International Airport (MAA).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>बृहदेश्वर मंदिर (तंजावुर)</strong>ग्रेनाइट पत्थरों से निर्मित चोल राजाओं का हजार साल पुराना विशाल मंदिर।</li><li><strong>ऊटी हिल स्टेशन</strong>नीलगिरी की पहाड़ियों में बसा धुंधला पर्वतीय स्थल और टॉय ट्रेन ट्रैक।</li>",
+          hospitals: "<li><strong>MMC चेन्नई</strong>मद्रास मेडिकल कॉलेज और जनरल अस्पताल (चेन्नई का मुख्य आपातकालीन केंद्र)।</li>",
+          needs: "<li><strong>यातायात</strong>चेन्नई सेंट्रल रेलवे टर्मिनस एवं चेन्नई अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
       },
       "telangana": {
-        en: "Telangana (Capital: Hyderabad): Famous for the iconic 400-year-old Charminar, exquisite Hyderabadi Biryani, Kakatiya architecture at Warangal, and unique Pochampally weaves.",
-        hi: "तेलंगाना (राजधानी: हैदराबाद): ऐतिहासिक चारमीनार, हैदराबादी बिरयानी, वारंगल के काकतीय वास्तुकला के स्मारकों और पोचमपल्ली साड़ियों के लिए प्रसिद्ध है।"
+        cityName: "TELANGANA REGION",
+        en: {
+          tourism: "<li><strong>Charminar (Hyderabad)</strong>Historic 1591 mosque arch architecture featuring four tall minarets.</li><li><strong>Golconda Fort</strong>Acoustic medieval diamond-trading fortress citadel workspace.</li>",
+          hospitals: "<li><strong>NIMS Hyderabad</strong>Nizams Institute of Medical Sciences. Advanced multi-ward hub.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Secunderabad Junction Depot & Rajiv Gandhi International Airport (HYD).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>चारमीनार (हैदराबाद)</strong>चार भव्य मीनारों वाला 1591 का ऐतिहासिक इस्लामी स्मारक वास्तुकला।</li><li><strong>गोलकुंडा किला</strong>अपनी अद्भुत ध्वनि प्रणाली (इको इफेक्ट) के लिए मशहूर ऐतिहासिक हीरा व्यापार किला।</li>",
+          hospitals: "<li><strong>NIMS हैदराबाद</strong>निज़ाम आयुर्विज्ञान संस्थान (राज्य का सबसे बड़ा विशेषज्ञ अस्पताल)।</li>",
+          needs: "<li><strong>यातायात</strong>सिकंदराबाद जंक्शन रेलवे स्टेशन एवं राजीव गांधी अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
       },
       "tripura": {
-        en: "Tripura (Capital: Agartala): Famous for the beautiful Ujjayanta Palace, Neermahal water palace, and the ancient rock-cut giant bas-relief carvings at Unakoti hills.",
-        hi: "त्रिपुरा (राजधानी: अगरतला): भव्य उज्जयंत पैलेस, नीरमहल (जल महल) और उनाकोटि पहाड़ी पर स्थित पत्थरों को काटकर बनाई गई प्राचीन विशाल मूर्तियों के लिए प्रसिद्ध है।"
+        cityName: "TRIPURA REGION",
+        en: {
+          tourism: "<li><strong>Ujjayanta Palace</strong>Stunning former royal palace with Mughal style public gardens.</li><li><strong>Neermahal Water Palace</strong>Grand red-and-white stone castle situated in the middle of Rudrasagar Lake.</li>",
+          hospitals: "<li><strong>AGMC Hospital</strong>Agartala Government Medical College & GB Pant emergency wing.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Agartala Central Airfields (IXA) & Agartala Railway network.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>उज्जयंत पैलेस</strong>मुगल शैली के बगीचों और विशाल गुंबदों से सजा त्रिपुरा के राजाओं का महल।</li><li><strong>नीरमहल (जल महल)</strong>रुद्रसागर झील के बिल्कुल बीचोबीच स्थित भारत का दूसरा सबसे बड़ा जल महल।</li>",
+          hospitals: "<li><strong>AGMC अस्पताल</strong>अगरतला सरकारी मेडिकल कॉलेज और जीबी पंत आपातकालीन अस्पताल शाखा।</li>",
+          needs: "<li><strong>यातायात</strong>अगरतला महाराज बीर बिक्रम हवाई अड्डा एवं अगरतला रेलवे स्टेशन।</li>"
+        }
       },
       "uttar pradesh": {
-        en: "Uttar Pradesh (Capital: Lucknow): Indias most populous state. Home to the iconic Taj Mahal in Agra, sacred ancient cities of Varanasi and Ayodhya, and the holy confluence at Prayagraj.",
-        hi: "उत्तर प्रदेश (राजधानी: लखनऊ): भारत का सर्वाधिक आबादी वाला राज्य। यह आगरा के ताज महल, पवित्र नगरी वाराणसी-अयोध्या और प्रयागराज के त्रिवेणी संगम के लिए प्रसिद्ध है।"
+        cityName: "UTTAR PRADESH REGION",
+        en: {
+          tourism: "<li><strong>Taj Mahal (Agra)</strong>The globally acclaimed white marble monument of love.</li><li><strong>Varanasi Ghats</strong>Ancient spiritual riverfront stone steps along the sacred Ganges.</li>",
+          hospitals: "<li><strong>SGPGI Lucknow / IMS BHU Varanasi</strong>Elite national scale clinical research and specialty hospitals.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Kanpur Central, Lucknow Charbagh, & Noida Jewar International Airport link.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>ताजमहल (आगरा)</strong>सफेद संगमरमर से निर्मित प्रेम का विश्वप्रसिद्ध प्रतीक वास्तुकला।</li><li><strong>वाराणसी के घाट</strong>गंगा नदी के किनारे बने प्राचीन आध्यात्मिक घाट और संध्या महाआरती स्थल।</li>",
+          hospitals: "<li><strong>SGPGI लखनऊ / IMS BHU वाराणसी</strong>उत्तर प्रदेश के सर्वोच्च सुपर स्पेशियलिटी मेडिकल रिसर्च अस्पताल।</li>",
+          needs: "<li><strong>यातायात</strong>कानपुर सेंट्रल स्टेशन, लखनऊ चारबाग जंक्शन एवं जेवर अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
       },
       "uttarakhand": {
-        en: "Uttarakhand (Capital: Dehradun): Devbhumi or Land of the Gods. Renowned for Rishikesh (Yoga Capital), Char Dham pilgrimage routes, and Valley of Flowers National Park.",
-        hi: "उत्तराखंड (राजधानी: देहरादून): देवभूमि के नाम से प्रसिद्ध। ऋषिकेश (योग की वैश्विक राजधानी), पवित्र चार धाम यात्रा और फूलों की सुंदर घाटी के लिए जाना जाता है।"
+        cityName: "UTTARAKHAND REGION",
+        en: {
+          tourism: "<li><strong>Badrinath & Kedarnath</strong>High Himalayan sacred Char Dham temples surrounded by snow peaks.</li><li><strong>Rishikesh Yoga Hub</strong>Tranquil world capital of spiritual yoga along fast-flowing glacial Ganges lanes.</li>",
+          hospitals: "<li><strong>AIIMS Rishikesh</strong>Elite public critical unit processing regional mountain trauma accidents.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Dehradun Terminal Depot & Jolly Grant Airbase Terminal.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>बद्रीनाथ और केदारनाथ</strong>हिमालय की ऊंची चोटियों के बीच बसे पवित्र चार धाम हिंदू तीर्थस्थल।</li><li><strong>ऋषिकेश योग केंद्र</strong>गंगा किनारे बसा अध्यात्म, रिवर राफ्टिंग और योग का वैश्विक केंद्र।</li>",
+          hospitals: "<li><strong>एम्स ऋषिकेश</strong>पहाड़ी क्षेत्रों की आपातकालीन चिकित्सा आवश्यकताओं का मुख्य केंद्र।</li>",
+          needs: "<li><strong>यातायात</strong>देहरादून रेलवे टर्मिनस एवं जौलीग्रांट हवाई अड्डा (देहरादून)।</li>"
+        }
       },
       "west bengal": {
-        en: "West Bengal (Capital: Kolkata): Cultural capital. Famed for the Darjeeling Himalayan toy train, Sundarbans mangrove forests (Royal Bengal Tigers), and grand Durga Puja celebrations.",
-        hi: "पश्चिम बंगाल (राजधानी: कोलकाता): सांस्कृतिक केंद्र। दार्जिलिंग हिमालयन टॉय ट्रेन, सुंदरबन डेल्टा (रॉयल बंगाल टाइगर) और भव्य दुर्गा पूजा उत्सव के लिए प्रसिद्ध है।"
+        cityName: "WEST BENGAL REGION",
+        en: {
+          tourism: "<li><strong>Victoria Memorial (Kolkata)</strong>Grand white marble palace museum showcasing British colonial era history.</li><li><strong>Darjeeling Hills</strong>High alpine landscape under Mt. Kanchenjunga famous for tea farms.</li>",
+          hospitals: "<li><strong>SSKM Hospital</strong>Kolkata. Prestigious multi-ward state public clinical command block.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Howrah Junction Terminal (Indias largest railway platform) & Kolkata Airport (CCU).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>विक्टोरिया मेमोरियल</strong>कोलकाता का विशाल ब्रिटिश कालीन सफेद संगमरमर का महल संग्रहालय।</li><li><strong>दार्जिलिंग हिल्स</strong>कंचनजंगा पर्वतमाला के साए में स्थित प्रसिद्ध चाय बागान और हिल स्टेशन।</li>",
+          hospitals: "<li><strong>SSKM अस्पताल कोलकाता</strong>राज्य का सबसे बड़ा और प्रतिष्ठित सरकारी मेडिकल कॉलेज परिसर।</li>",
+          needs: "<li><strong>यातायात</strong>हावड़ा जंक्शन रेलवे टर्मिनस एवं नेताजी सुभाष चंद्र बोस हवाई अड्डा।</li>"
+        }
+      },
+      "delhi": {
+        cityName: "DELHI NATIONAL CAPITAL REGION",
+        en: {
+          tourism: "<li><strong>Red Fort & Qutub Minar</strong>Historic Mughal red sandstone structures and tall victory minarets.</li><li><strong>India Gate</strong>Grand stone arch war memorial structure keeping the eternal flame.</li>",
+          hospitals: "<li><strong>AIIMS New Delhi</strong>Indias premier top-tier national medical emergency facility.</li>",
+          needs: "<li><strong>Transit Hubs</strong>New Delhi Junction (NDLS) & Indira Gandhi International Airport (DEL).</li>"
+        },
+        hi: {
+          tourism: "<li><strong>लाल किला और कुतुब मीनार</strong>मुगलकालीन लाल बलुआ पत्थर के ऐतिहासिक किले और विशाल मीनार वास्तुकला।</li><li><strong>इंडिया गेट</strong>अमर जवान ज्योति से प्रज्ज्वलित राष्ट्रीय युद्ध स्मारक भव्य मेहराब द्वार।</li>",
+          hospitals: "<li><strong>एम्स नई दिल्ली (AIIMS)</strong>देश का सर्वोच्च और सबसे बड़ा चिकित्सा उपचार संस्थान।</li>",
+          needs: "<li><strong>यातायात</strong>नई दिल्ली रेलवे स्टेशन मुख्य नेटवर्क एवं इंदिरा गांधी अंतर्राष्ट्रीय हवाई अड्डा।</li>"
+        }
+      },
+      "jammu and kashmir": {
+        cityName: "JAMMU AND KASHMIR REGION",
+        en: {
+          tourism: "<li><strong>Dal Lake (Srinagar)</strong>Scenic alpine lake famous for wood-carved houseboats and shikaras.</li><li><strong>Gulmarg Valley</strong>Premium high-altitude winter snow ski trails and gondola lifts.</li>",
+          hospitals: "<li><strong>SKIMS Soura</strong>Srinagar. Sher-i-Kashmir Institute of Medical Sciences.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Srinagar Airport Terminal (SXR) & Jammu Tawi rail depot.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>डल झील (श्रीनगर)</strong>खूबसूरत वादियों के बीच शिकारा और लकड़ी के हाउसबोट के लिए प्रसिद्ध झील।</li><li><strong>गुलमर्ग घाटी</strong>एशिया के सबसे बेहतरीन बर्फबारी स्की रिसॉर्ट और केबल कार (गोंडोला) नेटवर्क।</li>",
+          hospitals: "<li><strong>SKIMS सौरा श्रीनगर</strong>कश्मीर घाटी का सबसे बड़ा विशेषज्ञ मेडिकल रिसर्च अस्पताल।</li>",
+          needs: "<li><strong>यातायात</strong>श्रीनगर हवाई अड्डा मुख्य टर्मिनस एवं जम्मू तवी रेलवे स्टेशन।</li>"
+        }
+      },
+      "ladakh": {
+        cityName: "LADAKH REGION",
+        en: {
+          tourism: "<li><strong>Pangong Tso Lake</strong>Endorheic clear blue alpine lake deep in the high mountain plains.</li><li><strong>Leh Palace</strong>Historic nine-story cliffside fortress overlooking the Indus valley.</li>",
+          hospitals: "<li><strong>SNM Hospital Leh</strong>High-altitude public specialist medical center infrastructure.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Kushok Bakula Rimpochee Airport (Leh) & Manali-Leh highways.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>पैंगोंग त्सो झील</strong>ऊंचे पहाड़ों के बीच स्थित नीले खारे पानी की विख्यात वास्तविक सुंदर झील।</li><li><strong>लेह पैलेस</strong>लेह की पहाड़ी पर स्थित लद्दाख राजवंश का ऐतिहासिक नौ-मंजिला प्राचीन किला।</li>",
+          hospitals: "<li><strong>SNM अस्पताल लेह</strong>अत्यधिक ऊंचाई पर स्थित लद्दाख क्षेत्र का मुख्य स्वास्थ्य उपचार केंद्र।</li>",
+          needs: "<li><strong>यातायात</strong>कुशोक बकुला रिम्पोचे हवाई अड्डा (लेह) एवं मनाली-लेह राष्ट्रीय राजमार्ग।</li>"
+        }
+      },
+      "puducherry": {
+        cityName: "PUDUCHERRY REGION",
+        en: {
+          tourism: "<li><strong>French Quarter streets</strong>Charming colonial era yellow villas and beautiful clean promenade beaches.</li><li><strong>Auroville Matrimandir</strong>Massive gold-plated structural sphere built for silent meditation loops.</li>",
+          hospitals: "<li><strong>JIPMER</strong>Jawaharlal Institute of Postgraduate Medical Education & Research.</li>",
+          needs: "<li><strong>Transit Hubs</strong>Puducherry Rail Terminal & Chennai port link networks.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>फ्रेंच क्वार्टर</strong>फ्रांसीसी औपनिवेशिक वास्तुकला की पीली कोठियां और सुंदर साफ प्रॉमनेड समुद्र तट।</li><li><strong>ऑरोविले मातृमंदिर</strong>शांति और ध्यान साधना के लिए बनाया गया विशाल स्वर्ण-जड़ित गोलाकार संरचना केंद्र।</li>",
+          hospitals: "<li><strong>जिपमेर (JIPMER)</strong>देश का विख्यात केंद्र सरकार का स्वायत्त मेडिकल संस्थान और अस्पताल।</li>",
+          needs: "<li><strong>यातायात</strong>पुदुच्चेरी रेलवे स्टेशन नेटवर्क एवं चेन्नई राष्ट्रीय राजमार्ग संपर्क रूट।</li>"
+        }
+      },
+      "chandigarh": {
+        cityName: "CHANDIGARH REGION",
+        en: {
+          tourism: "<li><strong>Rock Garden</strong>Stunning public sculpture park built entirely out of industrial recycling materials.</li><li><strong>Sukhna Lake</strong>Peaceful man-made rain lake located beneath Shivalik hill folds.</li>",
+          hospitals: "<li><strong>PGIMER Chandigarh</strong>Postgraduate Institute of Medical Education & Research (National scale clinic).</li>",
+          needs: "<li><strong>Transit Hubs</strong>Chandigarh Central Railway Terminal & Chandigarh Domestic Airport network.</li>"
+        },
+        hi: {
+          tourism: "<li><strong>रॉक गार्डन</strong>नेकचंद द्वारा औद्योगिक कचरे और रीसायकल सामानों से बनाया गया कलात्मक मूर्तिकला पार्क।</li><li><strong>सुखना झील</strong>शिवालिक पहाड़ियों की तलहटी में स्थित बेहद शांत कृत्रिम मानव-निर्मित झील।</li>",
+          hospitals: "<li><strong>PGIMER चंडीगढ़</strong>देश के सबसे बड़े और प्रतिष्ठित पीजी मेडिकल रिसर्च अस्पताल केंद्रों में से एक।</li>",
+          needs: "<li><strong>यातायात</strong>चंडीगढ़ मुख्य रेलवे जंक्शन एवं चंडीगढ़ घरेलू हवाई अड्डा टर्मिनस।</li>"
+        }
       }
     };
 
-    const funFacts = {
-      en: "Did you know? Bihar is home to the ancient Nalanda University, one of the world's first residential universities!",
-      hi: "क्या आप जानते हैं? बिहार में प्राचीन नालंदा विश्वविद्यालय है, जो दुनिया के पहले आवासीय विश्वविद्यालयों में से एक है!"
-    };
-
     function speakText(text, language="en-US") {
-      window.speechSynthesis.cancel(); // Clears any ongoing spoken buffer instantly
+      window.speechSynthesis.cancel(); 
       let speech = new SpeechSynthesisUtterance(text);
       speech.lang = language;
       window.speechSynthesis.speak(speech);
     }
 
-    function typeWriter(text, elementId, i=0) {
-      const container = document.getElementById(elementId);
-      if(i === 0) container.innerHTML = "";
-      
-      if (i < text.length) {
-        container.innerHTML += text.charAt(i);
-        setTimeout(() => typeWriter(text, elementId, ++i), 15);
+    // --- ACCURATE SPECIFIC GREETING HOOK TRIGGER LAYER ---
+    function triggerGreetingSound() {
+      if (!hasGreeted) {
+        speakText("Hello shivam i am your assistant  marco. tell me any state name to get information", "en-US");
+        hasGreeted = true;
+        return true;
       }
+      return false;
     }
 
-    window.addEventListener("pageshow", () => {
-      window.speechSynthesis.cancel();
-    });
-
-    window.onload = function() {
-      if (!sessionStorage.getItem("introSpoken")) {
-        setTimeout(() => {
-          speakText("Hello shivam singh. I am Nova, your digital assistant guide. Please choose your language, English or Hindi, and tell me any Indian State name to begin.");
-        }, 500);
-        sessionStorage.setItem("introSpoken", "true");
-      }
-    };
-
     function setLanguage(language) {
+      const greetingFired = triggerGreetingSound();
       lang = language;
+      document.getElementById("btnEn").classList.remove("active");
+      document.getElementById("btnHi").classList.remove("active");
+      
       if (lang === "en") {
+        document.getElementById("btnEn").classList.add("active");
         document.getElementById("status").innerText = "Mode Status: English Connected";
-        speakText("You selected English. Now, click on speak and say any state name.");
+        if (!greetingFired) {
+          speakText("You selected English. Now, click on speak and say a district name");
+        }
       } else {
+        document.getElementById("btnHi").classList.add("active");
         document.getElementById("status").innerText = "मोड स्टेटस: हिंदी कनेक्टेड";
-        speakText("आपने हिंदी चुनी है। अब आपspeak पर क्लिक करें और राज्य का नाम बोलें।", "hi-IN");
+        if (!greetingFired) {
+          speakText("आपने हिंदी चुनी है। अब आप speak पर क्लिक करें और जिले का नाम बोलें।", "hi-IN");
+        }
       }
     }
 
     function startListening() {
+      triggerGreetingSound(); 
       let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = lang === "en" ? "en-US" : "hi-IN";
       recognition.start();
 
-      document.getElementById("status").innerText = "🎤 Listening for inputs...";
+      document.getElementById("status").innerText = "🎤 Listening for target name...";
 
       recognition.onresult = function(event) {
         let transcript = event.results[0][0].transcript.toLowerCase().trim();
-        document.getElementById("status").innerText = "✅ Analysis Complete";
-
-        // Remove absolute punctuation artifacts from spoken voice feeds
         transcript = transcript.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 
-        let stateFound = false;
-
-        // Dynamic key checking through the comprehensive dictionary keys
-        for(let stateKey in stateDatabase) {
-          if (transcript.includes(stateKey)) {
-            handleStateOutput(stateKey);
-            stateFound = true;
+        let matchFound = false;
+        for (let cityKey in cityDatabase) {
+          if (transcript.includes(cityKey)) {
+            openFullCityPage(cityKey);
+            matchFound = true;
             break;
           }
         }
 
-        if(!stateFound) {
-          if (transcript.includes("fun fact") || transcript.includes("मज़ेदार तथ्य")) {
-            speakText(funFacts[lang], lang === "en" ? "en-US" : "hi-IN");
-            typeWriter(funFacts[lang], "result");
-          } else {
-            let errorMsg = lang === "en" ? `Could not find records matching "${transcript}". Try saying 'Rajasthan' or 'Kerala'.` : `क्षमा करें, मुझे "${transcript}" का विवरण नहीं मिला। कृपया पुनः प्रयास करें।`;
-            speakText(errorMsg, lang === "en" ? "en-US" : "hi-IN");
-            typeWriter(errorMsg, "result");
-          }
+        if (!matchFound) {
+          document.getElementById("status").innerText = `⚠️ No records matching "${transcript}". Try "Patna".`;
         }
-      };
-
-      recognition.onspeechend = function() {
-        document.getElementById("status").innerText = "⏳ Compiling data matrix...";
-        recognition.stop();
-      };
-
-      recognition.onerror = function() {
-        document.getElementById("status").innerText = "⚠️ Input Link Interrupted. Retry.";
       };
     }
 
-    // --- Renders information immediately on current screen context ---
-    function handleStateOutput(stateKey) {
-      let details = stateDatabase[stateKey];
-      typeWriter(details[lang], "result");
-      speakText(details[lang], lang === "en" ? "en-US" : "hi-IN");
+    function openFullCityPage(cityKey) {
+      const record = cityDatabase[cityKey];
+      const selectedData = record[lang];
+
+      let notification = lang === "en" ? `Opening full system file for ${cityKey}` : `${cityKey} का पूर्ण विवरण पृष्ठ खोला जा रहा है`;
+      speakText(notification, lang === "en" ? "en-US" : "hi-IN");
+
+      document.getElementById("mainContainer").classList.add("full-page-mode");
+      document.getElementById("landingView").style.display = "none";
+      document.getElementById("cityDashboard").style.display = "block";
+
+      document.getElementById("dashCityName").innerText = record.cityName;
+      document.getElementById("listTourism").innerHTML = selectedData.tourism;
+      document.getElementById("listHospitals").innerHTML = selectedData.hospitals;
+      document.getElementById("listNeeds").innerHTML = selectedData.needs;
+    }
+
+    function returnToMenu() {
+      document.getElementById("mainContainer").classList.remove("full-page-mode");
+      document.getElementById("cityDashboard").style.display = "none";
+      document.getElementById("landingView").style.display = "block";
+      document.getElementById("status").innerText = "System Ready";
     }
   </script>
 </body>
