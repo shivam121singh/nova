@@ -36,7 +36,6 @@
       pointer-events: none;
     }
 
-    /* --- SHIVAM SINGH ATTRACTIVE SIGNATURE BANNER --- */
     .dev-signature {
       font-family: 'Orbitron', sans-serif;
       font-size: 0.75rem;
@@ -170,6 +169,8 @@
       border-radius: 12px;
       padding: 15px;
       min-height: 70px;
+      max-height: 200px;
+      overflow-y: auto;
     }
 
     #result {
@@ -178,44 +179,27 @@
       color: #ffffff;
     }
 
-    .image-wrapper {
-      display: flex;
-      justify-content: center;
-      width: 100%;
-      margin-top: 15px;
-    }
-
-    #districtImage {
-      width: 100%;
-      height: auto;
-      max-height: 150px;
-      object-fit: cover;
-      border-radius: 12px;
-      display: none;
-      border: 2px solid #00f0ff;
-    }
-
-    /* --- RESPONSIVE MOBILE FIX: PREVENTS OVERLAPPING OVER THE ANIMATION --- */
+    /* --- RESPONSIVE BOTTOM DRAWER FOR MOBILE DEVICES --- */
     @media (max-width: 850px) {
       body {
         padding: 0;
-        align-items: flex-end; /* Drops dashboard to bottom screen edge */
+        align-items: flex-end;
         justify-content: center;
       }
 
       .nova-container {
         max-width: 100vw;
-        border-radius: 24px 24px 0 0; /* Shifts to an elegant bottom sheet drawer style */
+        border-radius: 24px 24px 0 0;
         border-left: none;
         border-right: none;
         border-bottom: none;
         padding: 20px;
-        max-height: 55vh; /* Locks box to bottom half only */
-        overflow-y: auto;  /* Ensures content stays scroll-accessible inside drawer if needed */
+        max-height: 55vh;
+        overflow-y: auto;
       }
 
       .control-panel {
-        flex-direction: row; /* Horizontal row configurations to save space on mobile phones */
+        flex-direction: row;
       }
 
       .control-panel button {
@@ -225,7 +209,7 @@
       }
 
       .control-panel .speak-btn {
-        flex: 2; /* Keeps text button wide */
+        flex: 2;
       }
     }
   </style>
@@ -235,27 +219,22 @@
   <canvas id="orbitCanvas"></canvas>
 
   <div class="nova-container">
-    <!-- Dynamic custom developer credit string requested -->
     <div class="dev-signature">SYSTEM ACCESS // SHIVAM SINGH</div>
 
     <h1 class="main-title">👋 Hi, I am NOVA</h1>
     <h2 class="sub-title">Welcome to the living digital museum of India<br><span style="color:#ff0066">Created by Team Nexos</span></h2>
-    <p id="intro">I am your smart assistant for exploring the history and culture of India.</p>
+    <p id="intro">I am your smart assistant for exploring the history, culture, and architecture of all states of India.</p>
 
     <div class="control-panel">
       <button class="english" onclick="setLanguage('en')">English</button>
       <button class="hindi" onclick="setLanguage('hi')">हिंदी</button>
-      <button class="speak-btn" onclick="startListening()">🎤 Speak District</button>
+      <button class="speak-btn" onclick="startListening()">🎤 Speak State Name</button>
     </div>
 
     <p id="status">System Ready</p>
     
     <div class="output-box">
-      <p id="result">Awaiting inputs...</p>
-    </div>
-
-    <div class="image-wrapper">
-      <img id="districtImage" src="" alt="District Preview">
+      <p id="result">Awaiting inputs... Say a state name like "Rajasthan", "Kerala", or "Bihar" to unlock knowledge cards.</p>
     </div>
   </div>
 
@@ -273,24 +252,19 @@
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
       let cx, cy;
       
-      // Smart location routing: Shifts center points based on responsive viewports
       if (window.innerWidth > 850) {
-        // Desktop Layout: Shifts node matrix rightward away from left-docked dashboard panel
         cx = (window.innerWidth + 440) / 2;
         cy = window.innerHeight / 2;
       } else {
-        // Mobile Layout: Centers the nodes horizontally, pushes up into upper 45% viewport clear zone
         cx = window.innerWidth / 2;
         cy = window.innerHeight * 0.25; 
       }
       
       const time = Date.now() * 0.002;
-
-      // Render structural orbit rings (scaled nicely for mobile safety constraints)
       const ringScale = window.innerWidth > 850 ? 50 : 32;
+
       for (let i = 1; i <= 5; i++) {
         ctx.beginPath();
         ctx.strokeStyle = "rgba(0, 240, 255, 0.15)";
@@ -299,7 +273,6 @@
         ctx.stroke();
       }
 
-      // Render orbiting particle points
       for (let i = 0; i < 10; i++) {
         const angle = time + i * (Math.PI * 2 / 10);
         const radius = ringScale * 4;
@@ -312,7 +285,6 @@
         ctx.fill();
       }
 
-      // Render Moving central circle completely unobstructed
       const centerRadius = window.innerWidth > 850 ? 25 : 16; 
       const moveRadius = window.innerWidth > 850 ? 35 : 15;   
       const centerX = cx + Math.cos(time * 1.5) * moveRadius;
@@ -324,28 +296,128 @@
       ctx.shadowBlur = 25; 
       ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
       ctx.fill();
-      
-      ctx.shadowBlur = 0; // Clear immediately
+      ctx.shadowBlur = 0;
 
       requestAnimationFrame(draw);
     }
     draw();
 
-    // ----------------- NOVA Assistant System Logic -----------------
+    // ----------------- NOVA Assistant Data Logic -----------------
     let lang = "en";
 
-    const summaries = {
-      "patna": {
-        en: "Patna, the capital of Bihar, is one of the oldest continuously inhabited cities in the world. It has been an important political and cultural center since the Mauryan Empire.",
-        hi: "पटना बिहार की राजधानी है, जो गोलघर, पटना साहिब गुरुद्वारा और मौर्यकालीन इतिहास के लिए प्रसिद्ध है।",
-        link: "patna.html",
-        img: "patna.jpg"
+    // --- COMPLETE COMPREHENSIVE NATIVE REGISTER OF ALL INDIAN STATES ---
+    const stateDatabase = {
+      "andhra pradesh": {
+        en: "Andhra Pradesh (Capital: Amaravati): Famous for its long coastline, Tirupati temple, and classical Kuchipudi dance. It is often called the Rice Bowl of India.",
+        hi: "आंध्र प्रदेश (राजधानी: अमरावती): यह राज्य अपने तटीय क्षेत्र, तिरुपति देवस्थानम मंदिर, और कुचिपुड़ी शास्त्रीय नृत्य के लिए विश्वप्रसिद्ध है।"
       },
-      "gaya": {
-        en: "Gaya is a prominent city in Bihar, India, known for its religious and historical significance. Bodh Gaya, located nearby, is where Gautama Buddha attained enlightenment.",
-        hi: "गया एक धार्मिक नगर है, महाबोधि मंदिर और भगवान बुद्ध के ज्ञान प्राप्ति स्थल के लिए प्रसिद्ध।",
-        link: "gaya.html",
-        img: "gaya.jpg"
+      "arunachal pradesh": {
+        en: "Arunachal Pradesh (Capital: Itanagar): Known as the Land of the Rising Sun, it features pristine Himalayan landscapes, Tawang Monastery, and rich tribal heritage.",
+        hi: "अरुणाचल प्रदेश (राजधानी: ईटानगर): 'उगते सूरज की भूमि' के नाम से जाना जाने वाला यह राज्य तवांग मठ और समृद्ध जनजातीय संस्कृति के लिए प्रसिद्ध है।"
+      },
+      "assam": {
+        en: "Assam (Capital: Dispur): Worldwide famous for its robust Assam tea, exquisite Muga silk, and the Kaziranga National Park which protects the rare one-horned rhinoceros.",
+        hi: "असम (राजधानी: दिसपुर): असम अपनी शानदार चाय, मूंगा रेशम और काजीरंगा राष्ट्रीय उद्यान (एक सींग वाले गेंडे का घर) के लिए प्रसिद्ध है।"
+      },
+      "bihar": {
+        en: "Bihar (Capital: Patna): The seat of ancient learning. Famous for Bodh Gaya where Buddha gained enlightenment, Nalanda University ruins, and its beautiful ancient Madhubani art paintings.",
+        hi: "बिहार (राजधानी: पटना): प्राचीन ज्ञान की भूमि। यह भगवान बुद्ध की ज्ञानस्थली बोधगया, नालंदा विश्वविद्यालय के अवशेष और मधुबनी पेंटिंग्स के लिए प्रसिद्ध है।"
+      },
+      "chhattisgarh": {
+        en: "Chhattisgarh (Capital: Raipur): Celebrated for its heavy forest covers, ancient waterfalls like Chitrakote, and historic tribal craftworks in Dokra style.",
+        hi: "छत्तीसगढ़ (राजधानी: रायपुर): अपने घने जंगलों, चित्रकोट जैसे विशाल झरनों और डोकरा कला जैसी ऐतिहासिक जनजातीय शिल्पकला के लिए प्रसिद्ध है।"
+      },
+      "goa": {
+        en: "Goa (Capital: Panaji): Indias smallest state, famous across the globe for its golden sand beaches, historic Portuguese church architecture, and active seafood nightlife.",
+        hi: "गोवा (राजधानी: पणजी): भारत का सबसे छोटा राज्य, जो अपने सुनहरे समुद्र तटों, पुर्तगाली वास्तुकला के चर्चों और समुद्री व्यंजनों के लिए प्रसिद्ध है।"
+      },
+      "gujarat": {
+        en: "Gujarat (Capital: Gandhinagar): Known for its rich mercantile history, the Asiatic Lions of Gir, Mahatma Gandhis legacy, and colorful Garba dance festivals.",
+        hi: "गुजरात (राजधानी: गांधीनगर): अपने व्यापारिक इतिहास, गीर के एशियाई शेरों, महात्मा गांधी की विरासत और रंगीन गरबा नृत्य उत्सवों के लिए जाना जाता है।"
+      },
+      "haryana": {
+        en: "Haryana (Capital: Chandigarh): Steeped in Vedic history as the battleground of Mahabharata at Kurukshetra. Today, it is a powerhouse of sports and agricultural production.",
+        hi: "हरियाणा (राजधानी: चंडीगढ़): कुरुक्षेत्र में महाभारत की ऐतिहासिक युद्धभूमि। वर्तमान में यह कृषि उत्पादन और खेलों में पदक जीतने के लिए अग्रणी है।"
+      },
+      "himachal pradesh": {
+        en: "Himachal Pradesh (Capital: Shimla): Nestled in the Western Himalayas, it is famous for beautiful hill stations like Manali, apple orchards, and scenic mountain passes.",
+        hi: "हिमाचल प्रदेश (राजधानी: शिमला): पश्चिमी हिमालय में बसा यह राज्य मनाली जैसे खूबसूरत हिल स्टेशनों, सेब के बागानों और प्राचीन देवभूमि संस्कृति के लिए प्रसिद्ध है।"
+      },
+      "jharkhand": {
+        en: "Jharkhand (Capital: Ranchi): The Mineral Land of India. Famous for its thick woods, rich coal fields, and sacred tribal worship grounds like Baidyanath Dham.",
+        hi: "झारखंड (राजधानी: रांची): भारत का खनिज प्रदेश। यह अपने घने वनों, कोयला खदानों और बैद्यनाथ धाम जैसे पवित्र धार्मिक स्थलों के लिए जाना जाता है।"
+      },
+      "karnataka": {
+        en: "Karnataka (Capital: Bengaluru): Indias IT Hub. It hosts beautiful historic ruins of the Vijayanagara Empire at Hampi, Mysore Palace, and fragrant sandalwood forests.",
+        hi: "कर्नाटक (राजधानी: बेंगलुरु): भारत का आईटी हब। यह हम्पी में विजयनगर साम्राज्य के अवशेषों, भव्य मैसूर पैलेस और चंदन के वनों के लिए प्रसिद्ध है।"
+      },
+      "kerala": {
+        en: "Kerala (Capital: Thiruvananthapuram): Known as Gods Own Country. Celebrated for its tranquil palm-lined backwaters, Ayurvedic medical treatments, and Kathakali dance art.",
+        hi: "केरल (राजधानी: तिरुवनंतपुरम): 'ईश्वर का अपना घर'। यह अपने शांत बैकवाटर झीलों, पारंपरिक आयुर्वेद उपचार और कथकली नृत्य कला के लिए प्रसिद्ध है।"
+      },
+      "madhya pradesh": {
+        en: "Madhya Pradesh (Capital: Bhopal): The Heart of India. Famous for the Khajuraho temples, Sanchi Stupa, and dense tiger reserves like Kanha and Bandhavgarh.",
+        hi: "मध्य प्रदेश (राजधानी: भोपाल): भारत का दिल। यह खजुराहो के मंदिरों, सांची स्तूप और कान्हा-बांधवगढ़ जैसे विशाल बाघ अभयारण्यों के लिए प्रसिद्ध है।"
+      },
+      "maharashtra": {
+        en: "Maharashtra (Capital: Mumbai): Indias financial capital. Features historic rock-cut caves at Ajanta and Ellora, Shivaji Maharajs hill forts, and lively Ganesh Chaturthi festivals.",
+        hi: "महाराष्ट्र (राजधानी: मुंबई): भारत की वित्तीय राजधानी। अजंता-एलोरा की गुफाएं, छत्रपति शिवाजी महाराज के किले और भव्य गणेशोत्सव इसकी पहचान हैं।"
+      },
+      "manipur": {
+        en: "Manipur (Capital: Imphal): Famed for Loktak, the unique floating lake with phumdis, the graceful Manipuri classical dance, and its indigenous polo history.",
+        hi: "मणिपुर (राजधानी: इम्फाल): तैरती हुई लोकतक झील (फुमदी के लिए प्रसिद्ध), कलात्मक मणिपुरी शास्त्रीय नृत्य और पोलो खेल की जन्मभूमि के रूप में जाना जाता है।"
+      },
+      "meghalaya": {
+        en: "Meghalaya (Capital: Shillong): The Abode of Clouds. Home to Mawsynram, the wettest place on earth, and unique living root bridges crafted by the Khasi tribe.",
+        hi: "मेघालय (राजधानी: शिलांग): 'बादलों का घर'। दुनिया में सबसे अधिक वर्षा वाला स्थान मॉसिनराम और जीवित जड़ों से बने प्राकृतिक पुल (लिविंग रूट ब्रिज) यहीं स्थित हैं।"
+      },
+      "mizoram": {
+        en: "Mizoram (Capital: Aizawl): Famous for its rolling blue hills, extensive green bamboo forests, and the rhythmic traditional Cheraw (bamboo) folk dance.",
+        hi: "मिजोरम (राजधानी: आइजोल): अपनी सुंदर नीली पहाड़ियों, बांस के घने जंगलों और प्रसिद्ध पारंपरिक 'चेराव' (बांस नृत्य) के लिए लोकप्रिय है।"
+      },
+      "nagaland": {
+        en: "Nagaland (Capital: Kohima): Home to vibrant warrior tribes, scenic Dzukou Valley, and the colorful annual Hornbill Festival celebrating indigenous Naga culture.",
+        hi: "नागालैंड (राजधानी: कोहिमा): समृद्ध जनजातीय योद्धा संस्कृतियों, खूबसूरत जुकू घाटी और प्रत्येक वर्ष होने वाले प्रसिद्ध 'हॉर्नबिल महोत्सव' के लिए प्रसिद्ध है।"
+      },
+      "odisha": {
+        en: "Odisha (Capital: Bhubaneswar): Famous for the ancient Konark Sun Temple, Puri Jagannath Rath Yatra, Chilika Lake, and the elegant Odissi classical dance form.",
+        hi: "ओडिशा (राजधानी: भुवनेश्वर): कोणार्क के सूर्य मंदिर, पुरी की जगन्नाथ रथ यात्रा, चिल्का झील और शास्त्रीय ओडिसी नृत्य शैली के लिए विश्वभर में प्रसिद्ध है।"
+      },
+      "punjab": {
+        en: "Punjab (Capital: Chandigarh): The Land of Five Rivers. World-renowned for the sacred Golden Temple in Amritsar, energetic Bhangra dance, and rich, vibrant cuisine.",
+        hi: "पंजाब (राजधानी: चंडीगढ़): पांच नदियों की भूमि। अमृतसर का पवित्र स्वर्ण मंदिर, ऊर्जावान भांगड़ा नृत्य और समृद्ध खान-पान इसकी मुख्य विशेषताएं हैं।"
+      },
+      "rajasthan": {
+        en: "Rajasthan (Capital: Jaipur): The Land of Kings. Famed for sprawling golden deserts, massive hilltop forts like Amer and Mehrangarh, folk music, and grand royal palaces.",
+        hi: "राजस्थान (राजधानी: जयपुर): राजाओं की भूमि। अपने सुनहरे रेगिस्तान, आमेर और मेहरानगढ़ जैसे विशाल किलों, घूमर नृत्य और शाही महलों के लिए प्रसिद्ध है।"
+      },
+      "sikkim": {
+        en: "Sikkim (Capital: Gangtok): Located beneath Mount Kangchenjunga. It is Indias first fully organic state, famous for Buddhist monasteries, alpine valleys, and clean green eco-tourism.",
+        hi: "सिक्किम (राजधानी: गंगटोक): कंचनजंगा पर्वत की छांव में बसा देश का पहला पूर्ण जैविक (ऑर्गेनिक) राज्य है, जो बौद्ध मठों और शांत वातावरण के लिए प्रसिद्ध है।"
+      },
+      "tamil nadu": {
+        en: "Tamil Nadu (Capital: Chennai): Home to ancient Dravidian stone temples with massive Gopurams (like Thanjavur), classical Bharatanatyam dance, and deep Tamil literary history.",
+        hi: "तमिलनाडु (राजधानी: चेन्नई): विशाल गोपुरम वाले प्राचीन द्रविड़ वास्तुकला के मंदिरों (जैसे तंजावुर), भरतनाट्यम नृत्य और समृद्ध तमिल संस्कृति का केंद्र है।"
+      },
+      "telangana": {
+        en: "Telangana (Capital: Hyderabad): Famous for the iconic 400-year-old Charminar, exquisite Hyderabadi Biryani, Kakatiya architecture at Warangal, and unique Pochampally weaves.",
+        hi: "तेलंगाना (राजधानी: हैदराबाद): ऐतिहासिक चारमीनार, हैदराबादी बिरयानी, वारंगल के काकतीय वास्तुकला के स्मारकों और पोचमपल्ली साड़ियों के लिए प्रसिद्ध है।"
+      },
+      "tripura": {
+        en: "Tripura (Capital: Agartala): Famous for the beautiful Ujjayanta Palace, Neermahal water palace, and the ancient rock-cut giant bas-relief carvings at Unakoti hills.",
+        hi: "त्रिपुरा (राजधानी: अगरतला): भव्य उज्जयंत पैलेस, नीरमहल (जल महल) और उनाकोटि पहाड़ी पर स्थित पत्थरों को काटकर बनाई गई प्राचीन विशाल मूर्तियों के लिए प्रसिद्ध है।"
+      },
+      "uttar pradesh": {
+        en: "Uttar Pradesh (Capital: Lucknow): Indias most populous state. Home to the iconic Taj Mahal in Agra, sacred ancient cities of Varanasi and Ayodhya, and the holy confluence at Prayagraj.",
+        hi: "उत्तर प्रदेश (राजधानी: लखनऊ): भारत का सर्वाधिक आबादी वाला राज्य। यह आगरा के ताज महल, पवित्र नगरी वाराणसी-अयोध्या और प्रयागराज के त्रिवेणी संगम के लिए प्रसिद्ध है।"
+      },
+      "uttarakhand": {
+        en: "Uttarakhand (Capital: Dehradun): Devbhumi or Land of the Gods. Renowned for Rishikesh (Yoga Capital), Char Dham pilgrimage routes, and Valley of Flowers National Park.",
+        hi: "उत्तराखंड (राजधानी: देहरादून): देवभूमि के नाम से प्रसिद्ध। ऋषिकेश (योग की वैश्विक राजधानी), पवित्र चार धाम यात्रा और फूलों की सुंदर घाटी के लिए जाना जाता है।"
+      },
+      "west bengal": {
+        en: "West Bengal (Capital: Kolkata): Cultural capital. Famed for the Darjeeling Himalayan toy train, Sundarbans mangrove forests (Royal Bengal Tigers), and grand Durga Puja celebrations.",
+        hi: "पश्चिम बंगाल (राजधानी: कोलकाता): सांस्कृतिक केंद्र। दार्जिलिंग हिमालयन टॉय ट्रेन, सुंदरबन डेल्टा (रॉयल बंगाल टाइगर) और भव्य दुर्गा पूजा उत्सव के लिए प्रसिद्ध है।"
       }
     };
 
@@ -355,6 +427,7 @@
     };
 
     function speakText(text, language="en-US") {
+      window.speechSynthesis.cancel(); // Clears any ongoing spoken buffer instantly
       let speech = new SpeechSynthesisUtterance(text);
       speech.lang = language;
       window.speechSynthesis.speak(speech);
@@ -366,7 +439,7 @@
       
       if (i < text.length) {
         container.innerHTML += text.charAt(i);
-        setTimeout(() => typeWriter(text, elementId, ++i), 20);
+        setTimeout(() => typeWriter(text, elementId, ++i), 15);
       }
     }
 
@@ -377,7 +450,7 @@
     window.onload = function() {
       if (!sessionStorage.getItem("introSpoken")) {
         setTimeout(() => {
-          speakText("Hello shivam singh. I am Nova, your assistant guide. Welcome to the living digital museum of India. Please choose your language: Hindi or English.");
+          speakText("Hello shivam singh. I am Nova, your digital assistant guide. Please choose your language, English or Hindi, and tell me any Indian State name to begin.");
         }, 500);
         sessionStorage.setItem("introSpoken", "true");
       }
@@ -387,10 +460,10 @@
       lang = language;
       if (lang === "en") {
         document.getElementById("status").innerText = "Mode Status: English Connected";
-        speakText("You selected English. Now, click on speak and say a district name");
+        speakText("You selected English. Now, click on speak and say any state name.");
       } else {
         document.getElementById("status").innerText = "मोड स्टेटस: हिंदी कनेक्टेड";
-        speakText("आपने हिंदी चुनी है। अब आप speak पर क्लिक करें और जिले का नाम बोलें।", "hi-IN");
+        speakText("आपने हिंदी चुनी है। अब आपspeak पर क्लिक करें और राज्य का नाम बोलें।", "hi-IN");
       }
     }
 
@@ -400,28 +473,39 @@
       recognition.start();
 
       document.getElementById("status").innerText = "🎤 Listening for inputs...";
-      document.getElementById("districtImage").style.display = "none";
 
       recognition.onresult = function(event) {
-        let transcript = event.results[0][0].transcript.toLowerCase();
-        document.getElementById("status").innerText = "✅ Audio Stream Recognized";
+        let transcript = event.results[0][0].transcript.toLowerCase().trim();
+        document.getElementById("status").innerText = "✅ Analysis Complete";
 
-        if (transcript.includes("patna")) {
-          handleDistrict("patna");
-        } else if (transcript.includes("gaya")) {
-          handleDistrict("gaya");
-        } else if (transcript.includes("fun fact") || transcript.includes("मज़ेदार तथ्य")) {
-          speakText(funFacts[lang], lang === "en" ? "en-US" : "hi-IN");
-          typeWriter(funFacts[lang], "result");
-        } else {
-          let errorMsg = lang === "en" ? "Sorry, I did not recognize this district." : "माफ़ कीजिए, मैं इस जिले को नहीं पहचान पाया।";
-          speakText(errorMsg, lang === "en" ? "en-US" : "hi-IN");
-          typeWriter(errorMsg, "result");
+        // Remove absolute punctuation artifacts from spoken voice feeds
+        transcript = transcript.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+
+        let stateFound = false;
+
+        // Dynamic key checking through the comprehensive dictionary keys
+        for(let stateKey in stateDatabase) {
+          if (transcript.includes(stateKey)) {
+            handleStateOutput(stateKey);
+            stateFound = true;
+            break;
+          }
+        }
+
+        if(!stateFound) {
+          if (transcript.includes("fun fact") || transcript.includes("मज़ेदार तथ्य")) {
+            speakText(funFacts[lang], lang === "en" ? "en-US" : "hi-IN");
+            typeWriter(funFacts[lang], "result");
+          } else {
+            let errorMsg = lang === "en" ? `Could not find records matching "${transcript}". Try saying 'Rajasthan' or 'Kerala'.` : `क्षमा करें, मुझे "${transcript}" का विवरण नहीं मिला। कृपया पुनः प्रयास करें।`;
+            speakText(errorMsg, lang === "en" ? "en-US" : "hi-IN");
+            typeWriter(errorMsg, "result");
+          }
         }
       };
 
       recognition.onspeechend = function() {
-        document.getElementById("status").innerText = "⏳ Compiling data...";
+        document.getElementById("status").innerText = "⏳ Compiling data matrix...";
         recognition.stop();
       };
 
@@ -430,18 +514,11 @@
       };
     }
 
-    function handleDistrict(district) {
-      let info = summaries[district];
-      typeWriter(info[lang], "result");
-      speakText(info[lang], lang === "en" ? "en-US" : "hi-IN");
-      
-      const imgElem = document.getElementById("districtImage");
-      imgElem.src = info.img;
-      imgElem.style.display = "block";
-      
-      setTimeout(() => {
-        window.location.href = info.link;
-      }, 4500);
+    // --- Renders information immediately on current screen context ---
+    function handleStateOutput(stateKey) {
+      let details = stateDatabase[stateKey];
+      typeWriter(details[lang], "result");
+      speakText(details[lang], lang === "en" ? "en-US" : "hi-IN");
     }
   </script>
 </body>
