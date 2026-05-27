@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova Interface + Assistant</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at center, #000814, #000206);
+      color: #ff0066;
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+      padding: 20px 40px;
+    }
+
+    #orbitCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* --- SHIVAM SINGH ATTRACTIVE SIGNATURE BANNER --- */
+    .dev-signature {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      color: #00f0ff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      border-bottom: 1px dashed rgba(0, 240, 255, 0.3);
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dev-signature::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background-color: #ff0066;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #ff0066;
+    }
+
+    /* Core Glassmorphic Shell */
+    .nova-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      background: rgba(0, 5, 12, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 30px;
+      text-align: left;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
+      transition: all 0.4s ease;
+    }
+
+    .nova-container h1.main-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.6rem;
+      color: #00f0ff;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+
+    .nova-container h2.sub-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      color: #ffffff;
+      letter-spacing: 1px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    #intro {
+      font-size: 1rem;
+      color: #b0c4de;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      font-weight: bold;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      letter-spacing: 1px;
+      width: 100%;
+      text-align: center;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    .english { 
+      background: transparent; 
+      color: #00f0ff; 
+      border: 1px solid #00f0ff;
+    }
+    .english:hover {
+      background: #00f0ff;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+
+    .hindi { 
+      background: transparent; 
+      color: #ff0066; 
+      border: 1px solid #ff0066;
+    }
+    .hindi:hover {
+      background: #ff0066;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255, 0, 102, 0.4);
+    }
+
+    .speak-btn { 
+      background: linear-gradient(135deg, #00f0ff, #7000ff); 
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(112, 0, 255, 0.3);
+    }
+
+    #status {
+      font-size: 0.9rem;
+      color: #ffea00;
+      margin-bottom: 10px;
+    }
+
+    .output-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      min-height: 70px;
+    }
+
+    #result {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: #ffffff;
+    }
+
+    .image-wrapper {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      margin-top: 15px;
+    }
+
+    #districtImage {
+      width: 100%;
+      height: auto;
+      max-height: 150px;
+      object-fit: cover;
+      border-radius: 12px;
+      display: none;
+      border: 2px solid #00f0ff;
+    }
+
+    /* --- RESPONSIVE MOBILE FIX: PREVENTS OVERLAPPING OVER THE ANIMATION --- */
+    @media (max-width: 850px) {
+      body {
+        padding: 0;
+        align-items: flex-end; /* Drops dashboard to bottom screen edge */
+        justify-content: center;
+      }
+
+      .nova-container {
+        max-width: 100vw;
+        border-radius: 24px 24px 0 0; /* Shifts to an elegant bottom sheet drawer style */
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        padding: 20px;
+        max-height: 55vh; /* Locks box to bottom half only */
+        overflow-y: auto;  /* Ensures content stays scroll-accessible inside drawer if needed */
+      }
+
+      .control-panel {
+        flex-direction: row; /* Horizontal row configurations to save space on mobile phones */
+      }
+
+      .control-panel button {
+        flex: 1;
+        padding: 10px 12px;
+        font-size: 11px;
+      }
+
+      .control-panel .speak-btn {
+        flex: 2; /* Keeps text button wide */
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="orbitCanvas"></canvas>
+
+  <div class="nova-container">
+    <!-- Dynamic custom developer credit string requested -->
+    <div class="dev-signature">SYSTEM ACCESS // SHIVAM SINGH</div>
+
+    <h1 class="main-title">👋 Hi, I am NOVA</h1>
+    <h2 class="sub-title">Welcome to the living digital museum of India<br><span style="color:#ff0066">Created by Team Nexos</span></h2>
+    <p id="intro">I am your smart assistant for exploring the history and culture of India.</p>
+
+    <div class="control-panel">
+      <button class="english" onclick="setLanguage('en')">English</button>
+      <button class="hindi" onclick="setLanguage('hi')">हिंदी</button>
+      <button class="speak-btn" onclick="startListening()">🎤 Speak District</button>
+    </div>
+
+    <p id="status">System Ready</p>
+    
+    <div class="output-box">
+      <p id="result">Awaiting inputs...</p>
+    </div>
+
+    <div class="image-wrapper">
+      <img id="districtImage" src="" alt="District Preview">
+    </div>
+  </div>
+
+  <script>
+    // --- Dynamic Adaptive Canvas Render Engine ---
+    const canvas = document.getElementById('orbitCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      let cx, cy;
+      
+      // Smart location routing: Shifts center points based on responsive viewports
+      if (window.innerWidth > 850) {
+        // Desktop Layout: Shifts node matrix rightward away from left-docked dashboard panel
+        cx = (window.innerWidth + 440) / 2;
+        cy = window.innerHeight / 2;
+      } else {
+        // Mobile Layout: Centers the nodes horizontally, pushes up into upper 45% viewport clear zone
+        cx = window.innerWidth / 2;
+        cy = window.innerHeight * 0.25; 
+      }
+      
+      const time = Date.now() * 0.002;
+
+      // Render structural orbit rings (scaled nicely for mobile safety constraints)
+      const ringScale = window.innerWidth > 850 ? 50 : 32;
+      for (let i = 1; i <= 5; i++) {
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(0, 240, 255, 0.15)";
+        ctx.lineWidth = 1;
+        ctx.arc(cx, cy, i * ringScale, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Render orbiting particle points
+      for (let i = 0; i < 10; i++) {
+        const angle = time + i * (Math.PI * 2 / 10);
+        const radius = ringScale * 4;
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        
+        ctx.beginPath();
+        ctx.fillStyle = "#00f0ff";
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Render Moving central circle completely unobstructed
+      const centerRadius = window.innerWidth > 850 ? 25 : 16; 
+      const moveRadius = window.innerWidth > 850 ? 35 : 15;   
+      const centerX = cx + Math.cos(time * 1.5) * moveRadius;
+      const centerY = cy + Math.sin(time * 1.5) * moveRadius;
+      
+      ctx.beginPath();
+      ctx.fillStyle = "#00ffff";
+      ctx.shadowColor = "#00ffff";
+      ctx.shadowBlur = 25; 
+      ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.shadowBlur = 0; // Clear immediately
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    // ----------------- NOVA Assistant System Logic -----------------
+    let lang = "en";
+
+    const summaries = {
+      "patna": {
+        en: "Patna, the capital of Bihar, is one of the oldest continuously inhabited cities in the world. It has been an important political and cultural center since the Mauryan Empire.",
+        hi: "पटना बिहार की राजधानी है, जो गोलघर, पटना साहिब गुरुद्वारा और मौर्यकालीन इतिहास के लिए प्रसिद्ध है।",
+        link: "patna.html",
+        img: "patna.jpg"
+      },
+      "gaya": {
+        en: "Gaya is a prominent city in Bihar, India, known for its religious and historical significance. Bodh Gaya, located nearby, is where Gautama Buddha attained enlightenment.",
+        hi: "गया एक धार्मिक नगर है, महाबोधि मंदिर और भगवान बुद्ध के ज्ञान प्राप्ति स्थल के लिए प्रसिद्ध।",
+        link: "gaya.html",
+        img: "gaya.jpg"
+      }
+    };
+
+    const funFacts = {
+      en: "Did you know? Bihar is home to the ancient Nalanda University, one of the world's first residential universities!",
+      hi: "क्या आप जानते हैं? बिहार में प्राचीन नालंदा विश्वविद्यालय है, जो दुनिया के पहले आवासीय विश्वविद्यालयों में से एक है!"
+    };
+
+    function speakText(text, language="en-US") {
+      let speech = new SpeechSynthesisUtterance(text);
+      speech.lang = language;
+      window.speechSynthesis.speak(speech);
+    }
+
+    function typeWriter(text, elementId, i=0) {
+      const container = document.getElementById(elementId);
+      if(i === 0) container.innerHTML = "";
+      
+      if (i < text.length) {
+        container.innerHTML += text.charAt(i);
+        setTimeout(() => typeWriter(text, elementId, ++i), 20);
+      }
+    }
+
+    window.addEventListener("pageshow", () => {
+      window.speechSynthesis.cancel();
+    });
+
+    window.onload = function() {
+      if (!sessionStorage.getItem("introSpoken")) {
+        setTimeout(() => {
+          speakText("Hello shivam singh. I am Nova, your assistant guide. Welcome to the living digital museum of India. Please choose your language: Hindi or English.");
+        }, 500);
+        sessionStorage.setItem("introSpoken", "true");
+      }
+    };
+
+    function setLanguage(language) {
+      lang = language;
+      if (lang === "en") {
+        document.getElementById("status").innerText = "Mode Status: English Connected";
+        speakText("You selected English. Now, click on speak and say a district name");
+      } else {
+        document.getElementById("status").innerText = "मोड स्टेटस: हिंदी कनेक्टेड";
+        speakText("आपने हिंदी चुनी है। अब आप speak पर क्लिक करें और जिले का नाम बोलें।", "hi-IN");
+      }
+    }
+
+    function startListening() {
+      let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = lang === "en" ? "en-US" : "hi-IN";
+      recognition.start();
+
+      document.getElementById("status").innerText = "🎤 Listening for inputs...";
+      document.getElementById("districtImage").style.display = "none";
+
+      recognition.onresult = function(event) {
+        let transcript = event.results[0][0].transcript.toLowerCase();
+        document.getElementById("status").innerText = "✅ Audio Stream Recognized";
+
+        if (transcript.includes("patna")) {
+          handleDistrict("patna");
+        } else if (transcript.includes("gaya")) {
+          handleDistrict("gaya");
+        } else if (transcript.includes("fun fact") || transcript.includes("मज़ेदार तथ्य")) {
+          speakText(funFacts[lang], lang === "en" ? "en-US" : "hi-IN");
+          typeWriter(funFacts[lang], "result");
+        } else {
+          let errorMsg = lang === "en" ? "Sorry, I did not recognize this district." : "माफ़ कीजिए, मैं इस जिले को नहीं पहचान पाया।";
+          speakText(errorMsg, lang === "en" ? "en-US" : "hi-IN");
+          typeWriter(errorMsg, "result");
+        }
+      };
+
+      recognition.onspeechend = function() {
+        document.getElementById("status").innerText = "⏳ Compiling data...";
+        recognition.stop();
+      };
+
+      recognition.onerror = function() {
+        document.getElementById("status").innerText = "⚠️ Input Link Interrupted. Retry.";
+      };
+    }
+
+    function handleDistrict(district) {
+      let info = summaries[district];
+      typeWriter(info[lang], "result");
+      speakText(info[lang], lang === "en" ? "en-US" : "hi-IN");
+      
+      const imgElem = document.getElementById("districtImage");
+      imgElem.src = info.img;
+      imgElem.style.display = "block";
+      
+      setTimeout(() => {
+        window.location.href = info.link;
+      }, 4500);
+    }
+  </script>
+</body>
+</html>
